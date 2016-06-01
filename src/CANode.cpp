@@ -13,6 +13,7 @@
 #include <Metro.h>
 #include <FlexCAN.h>
 #include <OneWire.h>
+#include "CANode.h"
 // Configurations
 // Misc
 #define DEBUG 0
