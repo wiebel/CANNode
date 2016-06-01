@@ -14,6 +14,7 @@
 #include <FlexCAN.h>
 #include <OneWire.h>
 #include "CANode.h"
+
 // Configurations
 // Misc
 #define DEBUG 0
@@ -41,6 +42,10 @@
 #define PIO_B 0x40
 
 #define DS2406_BUF_LEN 10
+// Definitions
+static OW_switch_t switches;
+
+
 
 // Initialisation
 // Misc
@@ -62,7 +67,7 @@ FlexCAN CANbus(CAN_speed);
 // OneWire
 uint8_t addr[8];
 uint8_t buffer[DS2406_BUF_LEN];
-uint8_t tmp;
+uint8_t readout,tmp;
 OneWire OW_1(OW_pin);
 
 
@@ -123,6 +128,20 @@ uint8_t read_DS2406(uint8_t* addr) {
 void setup(void)
 {
   // Misc
+  switches.nick = 1;
+  switches.addr[0] = 0x12,
+  switches.addr[1] = 0x5b;
+  switches.addr[2] = 0x27;
+  switches.addr[3] = 0x50;
+  switches.addr[4] = 0x0;
+  switches.addr[5] = 0x0;
+  switches.addr[6] = 0x0;
+  switches.addr[7] = 0x26;
+  switches.state = 0x60;
+  //my_sw.event[0] =  { 0x01020304, 2, { 0xde, 0xad }};
+
+    //{ 0x02040608, 2, { 0xbe, 0xef }}};
+
   Serial.begin(115200);
   pinMode(led, OUTPUT);
   digitalWrite(led, 1);
@@ -163,18 +182,28 @@ void loop(void)
 
 
         // At this point, we know we have a DS2406.  Blink it.
-        if(addr[0] == DS2406_FAMILY) {
+        //if(addr[0] == DS2406_FAMILY) {
 //            foundDevice = true;
             // digitalWrite(13, HIGH);
-            tmp = read_DS2406(addr);
-            bool pioA = tmp & 0x04;
-            bool pioB = tmp & 0x08;
-            digitalWrite(led, pioA);
-          }
+//            tmp = read_DS2406(addr);
+//          bool pioA = tmp & 0x04;
+//            bool pioB = tmp & 0x08;
+//            digitalWrite(led, pioA)i;
+//          }
         }
+
   }
   if (METRO_OW_read.check() ) {
-
+    bool action[2];
+     readout = read_DS2406(switches.addr);
+    if (switches.state != readout) {
+      tmp = readout ^ switches.state;
+      switches.state = readout;
+      action[0] = tmp & 0x04;
+      action[1] = tmp & 0x08;
+    }
+    if (action[0]) { Serial.print("pioA toggled"); digitalWrite(led, !digitalRead(led));}
+    if (action[1]) { Serial.print("pioB toggled"); digitalWrite(led, !digitalRead(led));}
   }
 
 
