@@ -17,12 +17,14 @@
 
 // Configurations
 // Misc
+#define N_EVENTS 64
+#define N_SWITCHES 64
 #define DEBUG 0
 #define LED 13
 // Metro
 #define METRO_CAN_tick 1 // 20 millisecond
 #define METRO_OW_read_tick 20 // 20 millisecond
-#define METRO_OW_search_tick 1000 // 1000 millisecond
+#define METRO_OW_search_tick 10000 // 1000 millisecond
 // CAN bus
 #define CAN_speed 125000
 #define CAN_RS_PIN 2
@@ -43,8 +45,8 @@
 
 #define DS2406_BUF_LEN 10
 // Definitions
-static OW_switch_t switches;
-
+static OW_switch_t switches[N_SWITCHES];
+static event_t events[N_EVENTS];
 
 
 // Initialisation
@@ -67,13 +69,13 @@ FlexCAN CANbus(CAN_speed);
 // OneWire
 uint8_t addr[8];
 uint8_t buffer[DS2406_BUF_LEN];
-uint8_t readout,tmp;
+uint8_t readout,trig_event,event_idx,tmp;
 OneWire OW_1(OW_pin);
 
 
 
 
-static CAN_message_t msg,rxmsg;
+static CAN_message_t txmsg,rxmsg;
 static uint8_t hex[17] = "0123456789abcdef";
 
 int txCount,rxCount;
@@ -128,17 +130,28 @@ uint8_t read_DS2406(uint8_t* addr) {
 void setup(void)
 {
   // Misc
-  switches.nick = 1;
-  switches.addr[0] = 0x12,
-  switches.addr[1] = 0x5b;
-  switches.addr[2] = 0x27;
-  switches.addr[3] = 0x50;
-  switches.addr[4] = 0x0;
-  switches.addr[5] = 0x0;
-  switches.addr[6] = 0x0;
-  switches.addr[7] = 0x26;
-  switches.state = 0x60;
-  //my_sw.event[0] =  { 0x01020304, 2, { 0xde, 0xad }};
+  switches[0].nick = 1;
+  switches[0].addr[0] = 0x12,
+  switches[0].addr[1] = 0x5b;
+  switches[0].addr[2] = 0x27;
+  switches[0].addr[3] = 0x50;
+  switches[0].addr[4] = 0x0;
+  switches[0].addr[5] = 0x0;
+  switches[0].addr[6] = 0x0;
+  switches[0].addr[7] = 0x26;
+  switches[0].event_id[0] = 0x01;
+  switches[0].event_id[1] = 0x02;
+
+  events[0].id =0x01;
+  events[0].telegram.id = 0x0102DEAD;
+  events[0].telegram.len = 2;
+  events[0].telegram.buf[0] = 0xDE;
+  events[0].telegram.buf[1] = 0xAD;
+  events[1].id =0x02;
+  events[1].telegram.id = 0x0204BEEF;
+  events[1].telegram.len = 2;
+  events[1].telegram.buf[0] = 0xBE;
+  events[1].telegram.buf[1] = 0xEF;
 
     //{ 0x02040608, 2, { 0xbe, 0xef }}};
 
@@ -150,6 +163,9 @@ void setup(void)
   pinMode(CAN_RS_PIN,OUTPUT);
   digitalWrite(CAN_RS_PIN,0);
   CANbus.begin();
+  txmsg.ext = 1;
+  txmsg.timeout = 100;
+
 
   delay(100);
   Serial.println(F("Hello Teensy 3.2 CANode awakes."));
@@ -164,50 +180,41 @@ void loop(void)
 {
   // service software timers based on Metro tick
   if ( METRO_OW_search.check() ) {
-    //Serial.print("Beginning Search...\n");
     OW_1.reset_search();
-    // Assume we can't find something until we prove otherwise.
-//    bool foundDevice = false;
-
     while(OW_1.search(addr) == 1) {
         if ( OneWire::crc8( addr, 7) != addr[7]) {
             Serial.print("CRC is not valid!\n");
             delay(100);
             return;
         }
-
         Serial.print("Found a device: ");
         print_OW_Device(addr);
         Serial.println("");
-
-
-        // At this point, we know we have a DS2406.  Blink it.
-        //if(addr[0] == DS2406_FAMILY) {
-//            foundDevice = true;
-            // digitalWrite(13, HIGH);
-//            tmp = read_DS2406(addr);
-//          bool pioA = tmp & 0x04;
-//            bool pioB = tmp & 0x08;
-//            digitalWrite(led, pioA)i;
-//          }
         }
-
   }
   if (METRO_OW_read.check() ) {
     bool action[2];
-     readout = read_DS2406(switches.addr);
-    if (switches.state != readout) {
-      tmp = readout ^ switches.state;
-      switches.state = readout;
+     readout = read_DS2406(switches[0].addr);
+    if (switches[0].state != readout) {
+      tmp = readout ^ switches[0].state;
+      switches[0].state = readout;
       action[0] = tmp & 0x04;
       action[1] = tmp & 0x08;
     }
-    if (action[0]) { Serial.print("pioA toggled"); digitalWrite(led, !digitalRead(led));}
-    if (action[1]) { Serial.print("pioB toggled"); digitalWrite(led, !digitalRead(led));}
+    if (action[0]) {
+      Serial.print("pioA toggled");
+      digitalWrite(led, !digitalRead(led));
+      trig_event = switches[0].event_id[0];
+      // might need queuing
+      event_idx = 0;
+    }
+    if (action[1]) {
+      Serial.print("pioB toggled");
+      digitalWrite(led, !digitalRead(led));
+      trig_event= switches[0].event_id[1];
+      event_idx = 0;
+    }
   }
-
-
-
   if ( METRO_CAN.check() ) {
     if ( txTimer ) {
       --txTimer;
@@ -216,7 +223,17 @@ void loop(void)
       --rxTimer;
     }
   }
-
+  if ( txmsg.len == 0 && trig_event != 0 ) {
+    if ( events[event_idx].id == trig_event ) {
+      txmsg.id = events[event_idx].telegram.id;
+      txmsg.len = events[event_idx].telegram.len;
+      for (uint i=0;i<txmsg.len;i++){
+        txmsg.buf[i] = events[event_idx].telegram.buf[i];
+      }
+    }
+    if ( events[event_idx].id == 0) { trig_event = 0; }
+    event_idx++;
+  }
   // if not time-delayed, read CAN messages and print 1st byte
   if ( !rxTimer ) {
     while ( CANbus.read(rxmsg) ) {
@@ -230,27 +247,32 @@ void loop(void)
   if ( !txTimer ) {
     // if frames were received, print the count
     if ( rxCount ) {
-      #if DEBUG
+      //#if DEBUG
         Serial.write('=');
         Serial.print(rxCount);
         Serial.print(",Hello=");
         Serial.print(rxmsg.id,HEX);
-      #endif
+      //#endif
       rxCount = 0;
     }
     txTimer = 100;//milliseconds
-    msg.len = 8;
-    msg.id = 0x222;
-    for( int idx=0; idx<8; ++idx ) {
-      msg.buf[idx] = '0'+idx;
-    }
+    //txmsg.len = 8;
+    //txmsg.id = 0x222;
+    //for( int idx=0; idx<8; ++idx ) {
+    //  txmsg.buf[idx] = '0'+idx;
+    //}
     // send 6 at a time to force tx buffering
-    txCount = 16;
+    // txCount = 16;
     //digitalWrite(led, 1);
 //    Serial.println(".");
-    while ( txCount-- ) {
-      CANbus.write(msg);
-      msg.buf[0]++;
+    //while ( txCount-- ) {
+    if (txmsg.len != 0){
+      Serial.print("Sending to CAN");
+      Serial.print(txmsg.id,HEX);
+      CANbus.write(txmsg);
+      txmsg.buf[0]++;
+    //}
+      txmsg.len = 0;
     }
     // digitalWrite(led, 0);
     // time delay to force some rx data queue use
