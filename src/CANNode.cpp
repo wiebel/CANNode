@@ -106,10 +106,6 @@ void print_OW_Device(uint8_t *addr) {
     }
 }
 uint8_t read_DS2406(uint8_t* addr) {
-    // We're using a temporary switch object here only because we're
-    // discovering them dynamically.  Depending on your app, you may
-    // already know the serial number of the device you intend to
-    // control and will use it there.
 	  OW_1.reset();
     OW_1.select(addr);
     OW_1.write(DS2406_CHANNEL_ACCESS,1);
@@ -253,22 +249,11 @@ void loop(void)
       rxCount = 0;
     }
     txTimer = 100;//milliseconds
-    //txmsg.len = 8;
-    //txmsg.id = 0x222;
-    //for( int idx=0; idx<8; ++idx ) {
-    //  txmsg.buf[idx] = '0'+idx;
-    //}
-    // send 6 at a time to force tx buffering
-    // txCount = 16;
-    //digitalWrite(led, 1);
-//    Serial.println(".");
-    //while ( txCount-- ) {
     if (txmsg.len != 0){
       Serial.print("Sending to CAN");
       Serial.print(txmsg.id,HEX);
       CANbus.write(txmsg);
       txmsg.buf[0]++;
-    //}
       txmsg.len = 0;
     }
     // digitalWrite(led, 0);
