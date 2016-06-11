@@ -16,7 +16,7 @@
 #define N_EVENTS 64 							// size of events array
 #define N_SWITCHES 64 						// size of switch array
 #define DEBUG 0										// 1 for noisy serial
-#define LED 13										
+#define LED 13
 // Metro ticks in ms
 #define METRO_CAN_tick 1
 #define METRO_OW_read_tick 20
@@ -55,7 +55,8 @@ static event_t events[N_EVENTS];
   #define DEBUG_WRITE(a)
 #endif /* DEBUG */
 
-int led = LED;
+uint8_t led = LED;
+uint8_t state;
 // Metro
 Metro METRO_CAN = Metro(METRO_CAN_tick);
 Metro METRO_OW_read = Metro(METRO_OW_read_tick);
@@ -67,8 +68,6 @@ uint8_t addr[8];
 uint8_t buffer[DS2406_BUF_LEN];
 uint8_t readout,trig_event,event_idx,tmp;
 OneWire OW_1(OW_pin);
-
-
 
 
 static CAN_message_t txmsg,rxmsg;
@@ -118,6 +117,11 @@ uint8_t read_DS2406(uint8_t* addr) {
     #endif /* DEBUG */
     return tmp;
 }
+uint8_t toggle_Pin(uint8_t pin){
+  digitalWrite(pin, !digitalRead(pin));
+  return digitalRead(pin);
+}
+
 // -------------------------------------------------------------
 void setup(void)
 {
@@ -142,9 +146,11 @@ void setup(void)
   events[0].telegram.buf[1] = 0xAD;
   events[1].id =0x02;
   events[1].telegram.id = 0x0204BEEF;
-  events[1].telegram.len = 2;
-  events[1].telegram.buf[0] = 0xBE;
-  events[1].telegram.buf[1] = 0xEF;
+  events[1].telegram.len = 4;
+  events[1].telegram.buf[0] = 0xDE;
+  events[1].telegram.buf[1] = 0xAD;
+  events[1].telegram.buf[2] = 0xBE;
+  events[1].telegram.buf[3] = 0xEF;
 
     //{ 0x02040608, 2, { 0xbe, 0xef }}};
 
@@ -241,17 +247,34 @@ void loop(void)
     // if frames were received, print the count
     if ( rxCount ) {
       //#if DEBUG
-        Serial.write('=');
-        Serial.print(rxCount);
-        Serial.print(",Hello=");
+      // Serial.write('=');
+      //  Serial.print(rxCount);
+        Serial.print("GOT=");
         Serial.print(rxmsg.id,HEX);
-      //#endif
+        for (uint8_t i=0; i<rxmsg.len; i++){
+          Serial.print(":");
+          Serial.print(rxmsg.buf[i],HEX);
+        }
+        Serial.print("\n");
+        if (rxmsg.id ==0x0102DEAD) {
+          state=toggle_Pin(led);
+          txmsg.id=0xDEADBEEF;
+          txmsg.len=2;
+          txmsg.buf[0]=led;
+          txmsg.buf[1]=state;
+        }
+        //#endif
       rxCount = 0;
     }
     txTimer = 100;//milliseconds
     if (txmsg.len != 0){
-      Serial.print("Sending to CAN");
+      Serial.print("PUT=");
       Serial.print(txmsg.id,HEX);
+        for (uint8_t i=0; i<txmsg.len; i++){
+          Serial.print(":");
+          Serial.print(txmsg.buf[i],HEX);
+        }
+        Serial.print("\n");
       CANbus.write(txmsg);
       txmsg.buf[0]++;
       txmsg.len = 0;
