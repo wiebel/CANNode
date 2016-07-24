@@ -16,7 +16,18 @@
 #define N_EVENTS 64 							// size of events array
 #define N_SWITCHES 64 						// size of switch array
 #define DEBUG 0										// 1 for noisy serial
-#define LED 13
+#define LED 17
+#define RELAY1 0
+#define RELAY2 1
+#define RELAY3 23
+#define RELAY4 22
+#define RELAY5 17
+#define RELAY6 16
+#define RELAY7 9
+#define RELAY8 10
+
+
+
 // Metro ticks in ms
 #define METRO_CAN_tick 1
 #define METRO_OW_read_tick 20
@@ -41,8 +52,14 @@
 
 #define DS2406_BUF_LEN 10
 // Definitions
-static OW_switch_t switches[N_SWITCHES];
-static event_t events[N_EVENTS];
+static OW_switch_t switches[N_SWITCHES] PROGMEM=
+{
+ { 1, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 0x01, 0x02 } }
+};
+static uint8_t switches_state[N_SWITCHES];
+
+
+static tx_event_t tx_events[N_EVENTS];
 
 
 // Initialisation
@@ -77,7 +94,7 @@ int txCount,rxCount;
 unsigned int txTimer,rxTimer;
 
 
-// Functions -------------------------------------------------------
+// Functions ------------------------------^-------------------------
 void PrintBytes(uint8_t* addr, uint8_t count, bool newline=0) {
   for (uint8_t i = 0; i < count; i++) {
     Serial.print(addr[i]>>4, HEX);
@@ -91,7 +108,7 @@ void DEBUG_Bytes(uint8_t* addr, uint8_t count, bool newline=0) {
     for (uint8_t i = 0; i < count; i++) {
       Serial.print(addr[i]>>4, HEX);
       Serial.print(addr[i]&0x0f, HEX);
-    }
+  }
     if (newline)
       Serial.println();
   #endif
@@ -127,30 +144,30 @@ void setup(void)
 {
   // Misc
 	// Most clumsy way later to be put in eeprom or s/th
-  switches[0].nick = 1;
-  switches[0].addr[0] = 0x12,
-  switches[0].addr[1] = 0x5b;
-  switches[0].addr[2] = 0x27;
-  switches[0].addr[3] = 0x50;
-  switches[0].addr[4] = 0x0;
-  switches[0].addr[5] = 0x0;
-  switches[0].addr[6] = 0x0;
-  switches[0].addr[7] = 0x26;
-  switches[0].event_id[0] = 0x01;
-  switches[0].event_id[1] = 0x02;
+  // switches[0].id = 1;
+  // switches[0].addr[0] = 0x12,
+  // switches[0].addr[1] = 0x5b;
+  // switches[0].addr[2] = 0x27;
+  // switches[0].addr[3] = 0x50;
+  // switches[0].addr[4] = 0x0;
+  // switches[0].addr[5] = 0x0;
+  // switches[0].addr[6] = 0x0;
+  // switches[0].addr[7] = 0x26;
+  // switches[0].event_id[0] = 0x01;
+  // switches[0].event_id[1] = 0x02;
 
-  events[0].id =0x01;
-  events[0].telegram.id = 0x0102DEAD;
-  events[0].telegram.len = 2;
-  events[0].telegram.buf[0] = 0xDE;
-  events[0].telegram.buf[1] = 0xAD;
-  events[1].id =0x02;
-  events[1].telegram.id = 0x0204BEEF;
-  events[1].telegram.len = 4;
-  events[1].telegram.buf[0] = 0xDE;
-  events[1].telegram.buf[1] = 0xAD;
-  events[1].telegram.buf[2] = 0xBE;
-  events[1].telegram.buf[3] = 0xEF;
+  tx_events[0].id =0x01;
+  tx_events[0].telegram.id = 0x0102DEAD;
+  tx_events[0].telegram.len = 2;
+  tx_events[0].telegram.buf[0] = 0xDE;
+  tx_events[0].telegram.buf[1] = 0xAD;
+  tx_events[1].id =0x02;
+  tx_events[1].telegram.id = 0x0204BEEF;
+  tx_events[1].telegram.len = 4;
+  tx_events[1].telegram.buf[0] = 0xDE;
+  tx_events[1].telegram.buf[1] = 0xAD;
+  tx_events[1].telegram.buf[2] = 0xBE;
+  tx_events[1].telegram.buf[3] = 0xEF;
 
     //{ 0x02040608, 2, { 0xbe, 0xef }}};
 
@@ -194,9 +211,9 @@ void loop(void)
   if (METRO_OW_read.check() ) {
     bool action[2];
      readout = read_DS2406(switches[0].addr);
-    if (switches[0].state != readout) {
-      tmp = readout ^ switches[0].state;
-      switches[0].state = readout;
+    if (switches_state[0] != readout) {
+      tmp = readout ^ switches_state[0];
+      switches_state[0] = readout;
       action[0] = tmp & 0x04;
       action[1] = tmp & 0x08;
     }
@@ -223,14 +240,14 @@ void loop(void)
     }
   }
   if ( txmsg.len == 0 && trig_event != 0 ) {
-    if ( events[event_idx].id == trig_event ) {
-      txmsg.id = events[event_idx].telegram.id;
-      txmsg.len = events[event_idx].telegram.len;
+    if ( tx_events[event_idx].id == trig_event ) {
+      txmsg.id = tx_events[event_idx].telegram.id;
+      txmsg.len = tx_events[event_idx].telegram.len;
       for (uint i=0;i<txmsg.len;i++){
-        txmsg.buf[i] = events[event_idx].telegram.buf[i];
+        txmsg.buf[i] = tx_events[event_idx].telegram.buf[i];
       }
     }
-    if ( events[event_idx].id == 0) { trig_event = 0; }
+    if ( tx_events[event_idx].id == 0) { trig_event = 0; }
     event_idx++;
   }
   // if not time-delayed, read CAN messages and print 1st byte
