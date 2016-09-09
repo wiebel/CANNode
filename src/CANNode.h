@@ -1,16 +1,26 @@
 #include <Arduino.h>
 
-enum out_type { GPIO, PWM, OW, I2C, SPI, WS2811, DMX };
+enum out_type { GPIO, PWM, OW, I2C, SPI, WS2811, DMX, NOP };
 enum event_type { LOCAL, SEND};
 
-enum action_type { OFF, ON, TOGGLE, VALUE };
+enum action_type { OFF, ON, VALUE, TOGGLE };
 enum telegram_type { ALERT, EVENT, NOTIFY, INFO };
 
 typedef struct CAN_telegram_t {
   uint32_t id;
-  uint8_t len;
+  uint8_t length;
   uint8_t buf[8];
 } CAN_telegram_t;
+
+typedef struct telegram_comp_t {
+  uint8_t prio;
+  uint8_t frametype;
+  uint8_t dst;
+  uint8_t src;
+  uint8_t cmd;
+  uint8_t length;
+  uint8_t buf[8];
+} telegram_comp_t;
 
 typedef struct OW_switch_t {
   uint8_t nick;
@@ -23,24 +33,17 @@ typedef struct event_t {
   uint8_t prio;
   uint8_t dst;
   uint8_t cmd;
-  uint8_t target_id;
+  uint8_t data;
 //  uint8_t data[2];
 //  CAN_telegram_t telegram;
 } event_t;
 
-typedef struct telegram_dict_t {
-  CAN_telegram_t telegram;
-  uint8_t tag;
-} telegram_dict_ttelegram_dict_t;
-
 typedef struct action_t {
-  uint8_t id;
   uint8_t tag;
-  uint8_t outputs_id;
+  uint8_t outputs_idx;
 } action_t;
 
 typedef struct outputs_t {
-  uint8_t id;
   out_type type;
   uint8_t address;
 } outputs_t;

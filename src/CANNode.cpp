@@ -20,7 +20,7 @@
 #define N_OUTPUTS 64
 #define N_ACTIONS 64
 
-#define DEBUG 0										// 1 for noisy serial
+#define DEBUG 1										// 1 for noisy serial
 #define LED 17
 #define RELAY1 0
 #define RELAY2 1
@@ -80,6 +80,8 @@ static uint8_t outputs_state[N_OUTPUTS];
 // Type: 0: CMD, 1: FIRST, 2: CONT, 3: LAST
 // CMD:
 static event_t tx_events[N_EVENTS] PROGMEM={
+// |    --- ID ---    |
+// tag, prio, dst, cmd, data
 { 1, 0x03, 0xff, 0x03, 0x01},
 { 2, 0x03, 0xff, 0x03, 0x02},
 { 3, 0x03, 0xff, 0x03, 0x03},
@@ -103,16 +105,17 @@ static event_t tx_events[N_EVENTS] PROGMEM={
 };
 
 static action_t action_map[N_ACTIONS] PROGMEM={
-  {1, 0};
-  {2, 1};
-  {3, 2};
-  {4, 3};
-  {5, 4};
-  {6, 5};
-  {7, 6};
-  {8, 7};
-  {9, 0};{9, 1};{9, 2};{9, 3};{9, 4};{9, 5};{9, 6};{9, 7};
-}
+//  tag, output_idx
+  {1, 0},
+  {2, 1},
+  {3, 2},
+  {4, 3},
+  {5, 4},
+  {6, 5},
+  {7, 6},
+  {8, 7},
+  {9, 0},{9, 1},{9, 2},{9, 3},{9, 4},{9, 5},{9, 6},{9, 7},
+};
   // tx_events[0].id =0x01;
   // tx_events[0].telegram.id = 0x0102DEAD;
   // tx_events[0].telegram.len = 2;
@@ -128,14 +131,17 @@ static action_t action_map[N_ACTIONS] PROGMEM={
 // Misc
 #if DEBUG
   #define DEBUG_PRINT(a) Serial.print(a)
+  #define DEBUG_PRINTLN(a) Serial.println(a)
   #define DEBUG_WRITE(a) Serial.write(a)
 #else
   #define DEBUG_PRINT(a)
+  #define DEBUG_PRINTLN(a)
   #define DEBUG_WRITE(a)
 #endif /* DEBUG */
 
 uint8_t led = LED;
 uint8_t state;
+uint8_t pin_state;
 // Metro
 Metro METRO_CAN = Metro(METRO_CAN_tick);
 Metro METRO_OW_read = Metro(METRO_OW_read_tick);
@@ -206,31 +212,43 @@ uint32_t forgeid(event_t event){
   return (event.prio<<26)+(event.dst<<16)+(NODE_ID<<8)+event.cmd;
 }
 
-telegram_comp_t parse_CAN (CAN_telegram_t mesg){
+telegram_comp_t parse_CAN(CAN_message_t mesg){
   telegram_comp_t tmp;
   tmp.prio=mesg.id>>26;
   tmp.frametype=(mesg.id>>24) & 0x03;
   tmp.dst=(mesg.id>>16) & 0xFF;
   tmp.src=(mesg.id>>8) & 0xFF;
   tmp.cmd=mesg.id & 0xFF;
-  tmp.length=mesg.length;
-  tmp.buff=mesg.buf;
+  tmp.length=mesg.len;
+  for (uint8_t i = 0; i < mesg.len; i++) { tmp.buf[i] = mesg.buf[i]; }
   return tmp;
 }
 
-void take_action (event_type type, uint8_t tag ){
-for (uint_t i = 0; action_mapaction_map[i].tag != 0 ; i++) {
-  if ( action_mapaction_map[i].tag == tag ) {
+void take_action (action_type type, uint8_t tag ){
+for (uint8_t i = 0; action_map[i].tag != 0 ; i++) {
+  if ( action_map[i].tag == tag ) {
     switch ( type ) {
       case OFF:
-        digitalWrite(outputs[action_mapaction_map[i].outputs_idx].address,LOW);
+        digitalWrite(outputs[action_map[i].outputs_idx].address,LOW);
+        Serial.print(F("Switching OFF Output: "));
+        Serial.println(action_map[i].outputs_idx);
         break;
       case ON:
-        digitalWrite(outputs[action_mapaction_map[i].outputs_idx].address,HIGH);
+        digitalWrite(outputs[action_map[i].outputs_idx].address,HIGH);
+        Serial.print(F("Switching ON Output: "));
+        Serial.println(action_map[i].outputs_idx);
         break;
       case TOGGLE:
-        toggle_Pin(outputs[action_mapaction_map[i].outputs_idx].address);
+        pin_state = toggle_Pin(outputs[action_map[i].outputs_idx].address);
+        Serial.print(F("Toggeling Output: "));
+        Serial.print(action_map[i].outputs_idx);
+        Serial.print(F("to new state: "));
+        Serial.println(pin_state);
         break;
+      case VALUE:
+        Serial.println(F("TBD"));
+        break;
+      }
     }
   }
 }
@@ -317,7 +335,7 @@ void loop(void)
     if ( tx_events[event_idx].tag == trig_event ) {
       txmsg.id = forgeid(tx_events[event_idx]);
       txmsg.len = 1;
-      txmsg.buf[0]= tx_events[event_idx].target_id;
+      txmsg.buf[0]= tx_events[event_idx].data;
 //      for (uint i=0;i<txmsg.len;i++){
 //        txmsg.buf[i] = tx_events[event_idx].telegram.buf[i];
 //      }
@@ -348,7 +366,7 @@ void loop(void)
           Serial.print(rxmsg.buf[i],HEX);
         }
         Serial.print("\n");
-        mesg_comp= parse_CAN(rxmesg)
+        mesg_comp= parse_CAN(rxmsg);
         if (mesg_comp.dst == 0xFF || mesg_comp.dst == NODE_ID ) {
 
         switch (mesg_comp.cmd) {
