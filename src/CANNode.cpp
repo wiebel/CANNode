@@ -60,12 +60,18 @@
 static uint8_t node_id PROGMEM= { NODE_ID };
 static OW_switch_t switches[N_SWITCHES] PROGMEM={
 //  nick, addr[8], event_tag[sw1, sw2]
- { 1, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 1, 10 } },
+ { 201, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 1, 2 } },
+ { 202, { 0x12, 0xF7, 0x95, 0x4F, 0x0, 0x0, 0x0, 0x69 }, { 3, 4 } },
+ { 203, { 0x12, 0x68, 0x31, 0x67, 0x0, 0x0, 0x0, 0xBC }, { 5, 6 } },
+ { 204, { 0x12, 0x5E, 0xFF, 0x55, 0x0, 0x0, 0x0, 0x2C }, { 7, 8 } },
+ { 205, { 0x12, 0x7B, 0x44, 0x4D, 0x0, 0x0, 0x0, 0x6A }, { 1, 2 } },
+ { 101, { 0x12, 0xC1, 0x4E, 0x67, 0x0, 0x0, 0x0, 0x74 }, { 3, 0 } },
+ { 102, { 0x12, 0xA9, 0x97, 0x4F, 0x0, 0x0, 0x0, 0xD7 }, { 9, 0 } },
  { 0, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0 } }
 };
 static uint8_t switches_state[N_SWITCHES];
-
 static outputs_t outputs[N_OUTPUTS] PROGMEM={
+
   { GPIO, 0},
   { GPIO, 1},
   { GPIO, 23},
@@ -136,6 +142,7 @@ static action_t action_map[N_ACTIONS] PROGMEM={
 uint8_t led = LED;
 uint8_t state;
 uint8_t pin_state;
+bool action[2];
 // Metro
 Metro METRO_CAN = Metro(METRO_CAN_tick);
 Metro METRO_OW_read = Metro(METRO_OW_read_tick);
@@ -306,27 +313,47 @@ void loop(void)
             delay(10);
             return;
         }
-        Serial.print("Found a device: ");
-        print_OW_Device(addr);
-        Serial.println("");
+        bool new_owd=1;
+        for (uint8_t s_idx = 0; switches[s_idx].nick != 0; ++s_idx ){
+          bool cmp = 1;
+          for ( uint8_t i = 0; i < 8; i++){
+            if ( switches[s_idx].addr[i] != addr[i] ){
+              cmp = 0;
+              break;
+            }
+          }
+            if ( cmp ) {
+              new_owd=0;
+              break;
+            }
+          }
+        if (new_owd) {
+          Serial.print("Found a device: ");
+          print_OW_Device(addr);
+          Serial.println();
         }
+
+      }
   }
   if (METRO_OW_read.check() ) {
-    bool action[2];
-     readout = read_DS2406(switches[0].addr);
-    if (switches_state[0] != readout) {
-      tmp = readout ^ switches_state[0];
-      switches_state[0] = readout;
-      action[0] = tmp & 0x04;
-      action[1] = tmp & 0x08;
-    }
-    if (action[0]) {
-      Serial.println("pioA toggled");
-      send_event(switches[0].event_tag[0]);
-    }
-    if (action[1]) {
-      Serial.println("pioB toggled");
-      send_event(switches[0].event_tag[1]);
+    for (uint8_t s_idx = 0; switches[s_idx].nick != 0; ++s_idx ){
+      readout = read_DS2406(switches[s_idx].addr);
+      if (switches_state[s_idx] != readout) {
+        tmp = readout ^ switches_state[s_idx];
+        switches_state[s_idx] = readout;
+        action[0] = tmp & 0x04;
+        action[1] = tmp & 0x08;
+      }
+      if (action[0]) {
+        Serial.println("pioA toggled");
+        send_event(switches[s_idx].event_tag[0]);
+        action[0] = 0;
+      }
+      if (action[1]) {
+        Serial.println("pioB toggled");
+        send_event(switches[s_idx].event_tag[1]);
+        action[1] = 0;
+      }
     }
   }
   if ( METRO_CAN.check() ) {
@@ -347,7 +374,7 @@ void loop(void)
           Serial.print(":");
           Serial.print(rxmsg.buf[i],HEX);
         }
-        Serial.println("\n");
+        Serial.println();
         mesg_comp= parse_CAN(rxmsg);
         if (mesg_comp.dst == 0xFF || mesg_comp.dst == NODE_ID ) {
 
