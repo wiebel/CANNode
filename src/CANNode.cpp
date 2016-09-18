@@ -60,7 +60,8 @@
 static uint8_t node_id PROGMEM= { NODE_ID };
 static OW_switch_t switches[N_SWITCHES] PROGMEM={
 //  nick, addr[8], event_tag[sw1, sw2]
- { 1, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 1, 9 } }
+ { 1, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 1, 10 } },
+ { 0, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0 } }
 };
 static uint8_t switches_state[N_SWITCHES];
 
@@ -119,16 +120,6 @@ static action_t action_map[N_ACTIONS] PROGMEM={
   {8, 7},
   {9, 0},{9, 1},{9, 2},{9, 3},{9, 4},{9, 5},{9, 6},{9, 7},
 };
-  // tx_events[0].id =0x01;
-  // tx_events[0].telegram.id = 0x0102DEAD;
-  // tx_events[0].telegram.len = 2;
-  // tx_events[0].telegram.buf[0] = 0xDE;
-  // tx_events[0].telegram.buf[1] = 0xAD;
-  // tx_events[1].id =0x02;
-  // tx_events[1].telegram.id = 0x0204BEEF;
-  // tx_events[1].telegram.len = 4;
-  // tx_events[1].telegram.buf[0] = 0xDE;
-  // tx_events[1].telegram.buf[1] = 0xAD;
 
 // Initialisation
 // Misc
@@ -332,12 +323,10 @@ void loop(void)
     if (action[0]) {
       Serial.println("pioA toggled");
       send_event(switches[0].event_tag[0]);
-      delay(1);
     }
     if (action[1]) {
       Serial.println("pioB toggled");
       send_event(switches[0].event_tag[1]);
-//      delay(1);
     }
   }
   if ( METRO_CAN.check() ) {
@@ -348,30 +337,10 @@ void loop(void)
       --rxTimer;
     }
   }
-//  if ( txmsg.len == 0 && trig_event != 0 ) {
-
-//      for (uint i=0;i<txmsg.len;i++){
-//        txmsg.buf[i] = tx_events[event_idx].telegram.buf[i];
-//      }
-//    if ( tx_events[event_idx].tag == 0) { trig_event = 0; }
-//    event_idx++;
-//  }
-  // if not time-delayed, read CAN messages and print 1st byte
-//  if ( !rxTimer ) {
     while ( CANbus.read(rxmsg) ) {
       //hexDump( sizeof(rxmsg), (uint8_t *)&rxmsg );
       DEBUG_WRITE(rxmsg.buf[0]);
       rxCount++;
-    }
-//  }
-
-  // insert a time delay between transmissions
-  if ( !txTimer ) {
-    // if frames were received, print the count
-    if ( rxCount ) {
-      //#if DEBUG
-      // Serial.write('=');
-      //  Serial.print(rxCount);
         Serial.print("GOT=");
         Serial.print(rxmsg.id,HEX);
         for (uint8_t i=0; i<rxmsg.len; i++){
@@ -398,14 +367,7 @@ void loop(void)
           case 0x03:
             take_action(TOGGLE, mesg_comp.buf[0]);
           break;
-//        if (rxmsg.id == 0x0102DEAD) {
-//          state=toggle_Pin(led);
-//          txmsg.id=0xDEADBEEF;
-//          txmsg.len=2;
-//          txmsg.buf[0]=led;
-//          txmsg.buf[1]=state;
         }
-        //#endif
       }
       rxCount = 0;
     }
@@ -422,9 +384,5 @@ void loop(void)
       txmsg.buf[0]++;
       txmsg.len = 0;
     }
-    // digitalWrite(led, 0);
-    // time delay to force some rx data queue use
-    rxTimer = 3;//milliseconds
-  }
 
 }
