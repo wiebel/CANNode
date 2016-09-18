@@ -21,7 +21,7 @@
 #define N_ACTIONS 64
 
 #define DEBUG 0										// 1 for noisy serial
-#define LED 17
+#define LED 13
 #define RELAY1 0
 #define RELAY2 1
 #define RELAY3 23
@@ -294,7 +294,7 @@ void loop(void)
     while(OW_1.search(addr) == 1) {
         if ( OneWire::crc8( addr, 7) != addr[7]) {
             Serial.print("CRC is not valid!\n");
-            delay(100);
+            delay(10);
             return;
         }
         Serial.print("Found a device: ");
@@ -313,15 +313,15 @@ void loop(void)
     }
     if (action[0]) {
       Serial.print("pioA toggled");
-      digitalWrite(led, !digitalRead(led));
+//      digitalWrite(led, !digitalRead(led));
       trig_event = switches[0].event_tag[0];
       // might need queuing
       event_idx = 0;
     }
     if (action[1]) {
       Serial.print("pioB toggled");
-      digitalWrite(led, !digitalRead(led));
-      trig_event= switches[0].event_tag[1];
+//      digitalWrite(led, !digitalRead(led));
+      trig_event = switches[0].event_tag[1];
       event_idx = 0;
     }
   }
