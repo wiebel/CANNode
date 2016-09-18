@@ -99,11 +99,12 @@ static event_t tx_events[N_EVENTS] PROGMEM={
 { 10, 0x03, 0xff, 0x03, 0x05},
 { 10, 0x03, 0xff, 0x03, 0x06},
 { 10, 0x03, 0xff, 0x03, 0x07},
-{ 10, 0x03, 0xff, 0x03, 0x08}
+{ 10, 0x03, 0xff, 0x03, 0x08},
 
 //  { 0x01, 0x0CFF0103, 1, { 0xDE, 0xAD } },
 //  { 0x01, 0x0102DEAD, 2, { 0xDE, 0xAD } },
 //  { 0x02, 0x0204BEEF, 4, { 0xDE, 0xAD, 0xBE, 0xEF } }
+{ 0, 0, 0, 0, 0}
 };
 
 static action_t action_map[N_ACTIONS] PROGMEM={
@@ -225,7 +226,24 @@ telegram_comp_t parse_CAN(CAN_message_t mesg){
   for (uint8_t i = 0; i < mesg.len; i++) { tmp.buf[i] = mesg.buf[i]; }
   return tmp;
 }
+void send_event (uint8_t trig_event){
+        Serial.print(F("Sending event: "));
+        Serial.println(trig_event);
 
+  for (uint8_t e_idx = 0; tx_events[e_idx].tag != 0; e_idx++)
+    if ( tx_events[e_idx].tag == trig_event ) {
+      txmsg.id = forgeid(tx_events[e_idx]);
+      txmsg.len = 1;
+//      txmsg.timeout = 100;
+      txmsg.buf[0]= tx_events[e_idx].data;
+      CANbus.write(txmsg);
+        Serial.print(F("Sending to CAN ID: "));
+        Serial.print(txmsg.id);
+        Serial.print(F("DATA: "));
+        Serial.println(txmsg.buf[0]);
+      txmsg.len = 0;
+    }
+  }
 void take_action (action_type type, uint8_t tag ){
 for (uint8_t i = 0; action_map[i].tag != 0 ; i++) {
   if ( action_map[i].tag == tag ) {
@@ -312,17 +330,14 @@ void loop(void)
       action[1] = tmp & 0x08;
     }
     if (action[0]) {
-      Serial.print("pioA toggled");
-//      digitalWrite(led, !digitalRead(led));
-      trig_event = switches[0].event_tag[0];
-      // might need queuing
-      event_idx = 0;
+      Serial.println("pioA toggled");
+      send_event(switches[0].event_tag[0]);
+      delay(1);
     }
     if (action[1]) {
-      Serial.print("pioB toggled");
-//      digitalWrite(led, !digitalRead(led));
-      trig_event = switches[0].event_tag[1];
-      event_idx = 0;
+      Serial.println("pioB toggled");
+      send_event(switches[0].event_tag[1]);
+//      delay(1);
     }
   }
   if ( METRO_CAN.check() ) {
@@ -333,26 +348,22 @@ void loop(void)
       --rxTimer;
     }
   }
-  if ( txmsg.len == 0 && trig_event != 0 ) {
-    if ( tx_events[event_idx].tag == trig_event ) {
-      txmsg.id = forgeid(tx_events[event_idx]);
-      txmsg.len = 1;
-      txmsg.buf[0]= tx_events[event_idx].data;
+//  if ( txmsg.len == 0 && trig_event != 0 ) {
+
 //      for (uint i=0;i<txmsg.len;i++){
 //        txmsg.buf[i] = tx_events[event_idx].telegram.buf[i];
 //      }
-    }
-    if ( tx_events[event_idx].tag == 0) { trig_event = 0; }
-    event_idx++;
-  }
+//    if ( tx_events[event_idx].tag == 0) { trig_event = 0; }
+//    event_idx++;
+//  }
   // if not time-delayed, read CAN messages and print 1st byte
-  if ( !rxTimer ) {
+//  if ( !rxTimer ) {
     while ( CANbus.read(rxmsg) ) {
       //hexDump( sizeof(rxmsg), (uint8_t *)&rxmsg );
       DEBUG_WRITE(rxmsg.buf[0]);
       rxCount++;
     }
-  }
+//  }
 
   // insert a time delay between transmissions
   if ( !txTimer ) {
@@ -367,7 +378,7 @@ void loop(void)
           Serial.print(":");
           Serial.print(rxmsg.buf[i],HEX);
         }
-        Serial.print("\n");
+        Serial.println("\n");
         mesg_comp= parse_CAN(rxmsg);
         if (mesg_comp.dst == 0xFF || mesg_comp.dst == NODE_ID ) {
 
