@@ -60,25 +60,25 @@
 static uint8_t node_id PROGMEM= { NODE_ID };
 static OW_switch_t switches[N_SWITCHES] PROGMEM={
 //  nick, addr[8], event_tag[sw1, sw2]
- { 201, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 1, 2 } },
+ { 201, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 2, 1 } },
  { 202, { 0x12, 0xF7, 0x95, 0x4F, 0x0, 0x0, 0x0, 0x69 }, { 3, 4 } },
  { 203, { 0x12, 0x68, 0x31, 0x67, 0x0, 0x0, 0x0, 0xBC }, { 5, 6 } },
  { 204, { 0x12, 0x5E, 0xFF, 0x55, 0x0, 0x0, 0x0, 0x2C }, { 7, 8 } },
  { 205, { 0x12, 0x7B, 0x44, 0x4D, 0x0, 0x0, 0x0, 0x6A }, { 1, 2 } },
- { 101, { 0x12, 0xC1, 0x4E, 0x67, 0x0, 0x0, 0x0, 0x74 }, { 3, 0 } },
+ { 101, { 0x12, 0xC1, 0x4E, 0x67, 0x0, 0x0, 0x0, 0x74 }, { 7, 7 } },
  { 102, { 0x12, 0xA9, 0x97, 0x4F, 0x0, 0x0, 0x0, 0xD7 }, { 9, 0 } },
  { 0, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0 } }
 };
 static uint8_t switches_state[N_SWITCHES];
 static outputs_t outputs[N_OUTPUTS] PROGMEM={
 
-  { GPIO, 0},
-  { GPIO, 1},
-  { GPIO, 23},
-  { GPIO, 22},
-  { GPIO, 17},
-  { GPIO, 16},
-  { GPIO, 9},
+  { GPIO, 0},   // 0 Bad Decke
+  { GPIO, 1},   // 1  Bad Spiegel
+  { GPIO, 23},  // 2
+  { GPIO, 22},  // 3
+  { GPIO, 17},  // 4 Flur
+  { GPIO, 16},  // 5
+  { GPIO, 9},   // 6 Treppe oben
   { GPIO, 10},
   { NOP, 0xFF}
 };
@@ -260,7 +260,7 @@ for (uint8_t i = 0; action_map[i].tag != 0 ; i++) {
         pin_state = toggle_Pin(outputs[action_map[i].outputs_idx].address);
         Serial.print(F("Toggeling Output: "));
         Serial.print(action_map[i].outputs_idx);
-        Serial.print(F("to new state: "));
+        Serial.print(F(" to new state: "));
         Serial.println(pin_state);
         break;
       case VALUE:
@@ -345,12 +345,18 @@ void loop(void)
         action[1] = tmp & 0x08;
       }
       if (action[0]) {
-        Serial.println("pioA toggled");
+        Serial.print("pioA of switch ");
+        Serial.print(switches[s_idx].nick);
+        Serial.print(" is now ");
+        Serial.println(readout & 0x04);
         send_event(switches[s_idx].event_tag[0]);
         action[0] = 0;
       }
       if (action[1]) {
-        Serial.println("pioB toggled");
+        Serial.print("pioB of switch ");
+        Serial.print(switches[s_idx].nick);
+        Serial.print(" is now ");
+        Serial.println(readout & 0x08);
         send_event(switches[s_idx].event_tag[1]);
         action[1] = 0;
       }
