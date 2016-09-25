@@ -46,4 +46,5 @@ typedef struct action_t {
 typedef struct outputs_t {
   out_type type;
   uint8_t address;
+  bool invert;
 } outputs_t;

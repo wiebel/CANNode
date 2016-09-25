@@ -60,29 +60,29 @@
 static uint8_t node_id PROGMEM= { NODE_ID };
 static OW_switch_t switches[N_SWITCHES] PROGMEM={
 //  nick, addr[8], event_tag[sw1, sw2]
- { 201, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 2, 1 } },
+ { 201, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 1, 2 } }, //  Flur -> Bad
 // { 202, { 0x12, 0xF7, 0x95, 0x4F, 0x0, 0x0, 0x0, 0x69 }, { 3, 4 } },
 // { 203, { 0x12, 0x68, 0x31, 0x67, 0x0, 0x0, 0x0, 0xBC }, { 5, 6 } },
- { 204, { 0x12, 0x5E, 0xFF, 0x55, 0x0, 0x0, 0x0, 0x2C }, { 7, 8 } },
- { 205, { 0x12, 0x7B, 0x44, 0x4D, 0x0, 0x0, 0x0, 0x6A }, { 4, 7 } },
- { 101, { 0x12, 0xC1, 0x4E, 0x67, 0x0, 0x0, 0x0, 0x74 }, { 7, 7 } },
- { 102, { 0x12, 0xA9, 0x97, 0x4F, 0x0, 0x0, 0x0, 0xD7 }, { 9, 3 } },
- { 11, { 0x12, 0x9A, 0x94, 0x4F, 0x0, 0x0, 0x0, 0x2D }, { 9, 6 } },
- { 12, { 0x12, 0x2F, 0x98, 0x4F, 0x0, 0x0, 0x0, 0xE0 }, { 8, 8 } },
+ { 204, { 0x12, 0x5E, 0xFF, 0x55, 0x0, 0x0, 0x0, 0x2C }, { 3, 7 } }, // Treppe o/u??
+ { 205, { 0x12, 0x7B, 0x44, 0x4D, 0x0, 0x0, 0x0, 0x6A }, { 7, 0 } }, // Treppe
+ { 101, { 0x12, 0xC1, 0x4E, 0x67, 0x0, 0x0, 0x0, 0x74 }, { 3, 0 } }, // Flur -> Flur
+ { 102, { 0x12, 0xA9, 0x97, 0x4F, 0x0, 0x0, 0x0, 0xD7 }, { 4, 0 } }, // Inka
+ { 11, { 0x12, 0x9A, 0x94, 0x4F, 0x0, 0x0, 0x0, 0x2D }, { 6, 9 } }, // Bjarne
+ { 12, { 0x12, 0x2F, 0x98, 0x4F, 0x0, 0x0, 0x0, 0xE0 }, { 8, 0 } }, // SZ
  { 0, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0 } }
 };
 static uint8_t switches_state[N_SWITCHES];
 static outputs_t outputs[N_OUTPUTS] PROGMEM={
 
-  { GPIO, 0},   // 0 Bad Decke
-  { GPIO, 1},   // 1  Bad Spiegel
-  { GPIO, 23},  // 2 Inka
-  { GPIO, 22},  // 3
-  { GPIO, 17},  // 4
-  { GPIO, 16},  // 5 Bjarne
-  { GPIO, 9},   // 6 Treppe oben
-  { GPIO, 10},  // 7 Schlafzimmer
-  { NOP, 0xFF}
+  { GPIO, 0,  true },   // 0 Bad Decke
+  { GPIO, 1,  true },   // 1  Bad Spiegel
+  { GPIO, 23, true },  // 2 Inka
+  { GPIO, 22, true },  // 3
+  { GPIO, 17, true },  // 4
+  { GPIO, 16, true },  // 5 Bjarne
+  { GPIO, 9,  true },   // 6 Treppe oben
+  { GPIO, 10, true },  // 7 Schlafzimmer
+  { NOP, 0xFF, false }
 };
 static uint8_t outputs_state[N_OUTPUTS];
 //  ID:
@@ -92,15 +92,15 @@ static uint8_t outputs_state[N_OUTPUTS];
 static event_t tx_events[N_EVENTS] PROGMEM={
 // |    --- ID ---    |
 // tag, prio, dst, cmd, data
-{ 1, 0x03, 0xff, 0x03, 0x01},
-{ 2, 0x03, 0xff, 0x03, 0x02},
-{ 3, 0x03, 0xff, 0x03, 0x03},
-{ 4, 0x03, 0xff, 0x03, 0x04},
-{ 5, 0x03, 0xff, 0x03, 0x05},
-{ 6, 0x03, 0xff, 0x03, 0x06},
-{ 7, 0x03, 0xff, 0x03, 0x07},
-{ 8, 0x03, 0xff, 0x03, 0x08},
-{ 9, 0x03, 0xff, 0x03, 0x09},
+{ 1, 0x03, 0x01, 0x03, 0x01},
+{ 2, 0x03, 0x01, 0x03, 0x02},
+{ 3, 0x03, 0x01, 0x03, 0x03},
+{ 4, 0x03, 0x01, 0x03, 0x04},
+{ 5, 0x03, 0x01, 0x03, 0x05},
+{ 6, 0x03, 0x01, 0x03, 0x06},
+{ 7, 0x03, 0x01, 0x03, 0x07},
+{ 8, 0x03, 0x01, 0x03, 0x08},
+{ 9, 0x03, 0xff, OFF, 0x09},
 { 10, 0x03, 0xff, 0x03, 0x01},
 { 10, 0x03, 0xff, 0x03, 0x02},
 { 10, 0x03, 0xff, 0x03, 0x03},
@@ -249,12 +249,12 @@ for (uint8_t i = 0; action_map[i].tag != 0 ; i++) {
   if ( action_map[i].tag == tag ) {
     switch ( type ) {
       case OFF:
-        digitalWrite(outputs[action_map[i].outputs_idx].address,LOW);
+        digitalWrite(outputs[action_map[i].outputs_idx].address,LOW ^ outputs[action_map[i].outputs_idx].invert);
         Serial.print(F("Switching OFF Output: "));
         Serial.println(action_map[i].outputs_idx);
         break;
       case ON:
-        digitalWrite(outputs[action_map[i].outputs_idx].address,HIGH);
+        digitalWrite(outputs[action_map[i].outputs_idx].address, HIGH ^ outputs[action_map[i].outputs_idx].invert);
         Serial.print(F("Switching ON Output: "));
         Serial.println(action_map[i].outputs_idx);
         break;
@@ -263,7 +263,7 @@ for (uint8_t i = 0; action_map[i].tag != 0 ; i++) {
         Serial.print(F("Toggeling Output: "));
         Serial.print(action_map[i].outputs_idx);
         Serial.print(F(" to new state: "));
-        Serial.println(pin_state);
+        Serial.println(pin_state ^ outputs[action_map[i].outputs_idx].invert);
         break;
       case VALUE:
         Serial.println(F("TBD"));
@@ -280,6 +280,7 @@ void setup(void)
   Serial.begin(115200);
   pinMode(led, OUTPUT);
   digitalWrite(led, 1);
+  OW_1.reset_search();
 
   //CAN bus
   pinMode(CAN_RS_PIN,OUTPUT);
@@ -291,11 +292,15 @@ void setup(void)
   // outputs
   for (size_t i = 0; outputs[i].type != NOP; i++) {
     if (outputs[i].type == GPIO || outputs[i].type == PWM){
-      digitalWrite(outputs[i].address, HIGH);
+      //digitalWrite(outputs[i].address, LOW ^ outputs[action_map[i].outputs_idx].invert);
+      digitalWrite(outputs[i].address, HIGH );
       pinMode(outputs[i].address, OUTPUT);
     }
   }
 
+for (uint8_t s_idx = 0; switches[s_idx].nick != 0; ++s_idx ){
+   switches_state[s_idx] = read_DS2406(switches[s_idx].addr);
+  }
   delay(100);
   Serial.println(F("Hello Teensy 3.2 CANode awakes."));
   METRO_CAN.reset();
@@ -344,14 +349,14 @@ void loop(void)
       if (switches_state[s_idx] != readout) {
         tmp = readout ^ switches_state[s_idx];
         switches_state[s_idx] = readout;
-        action[0] = tmp & 0x04;
-        action[1] = tmp & 0x08;
+        action[0] = tmp & 0x08;
+        action[1] = tmp & 0x04;
       }
       if (action[0]) {
         Serial.print("pioA of switch ");
         Serial.print(switches[s_idx].nick);
         Serial.print(" is now ");
-        Serial.println(readout & 0x04);
+        Serial.println(readout & 0x08);
         send_event(switches[s_idx].event_tag[0]);
         action[0] = 0;
       }
@@ -359,7 +364,7 @@ void loop(void)
         Serial.print("pioB of switch ");
         Serial.print(switches[s_idx].nick);
         Serial.print(" is now ");
-        Serial.println(readout & 0x08);
+        Serial.println(readout & 0x04);
         send_event(switches[s_idx].event_tag[1]);
         action[1] = 0;
       }
