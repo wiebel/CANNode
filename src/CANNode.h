@@ -25,7 +25,7 @@ typedef struct telegram_comp_t {
 typedef struct OW_switch_t {
   uint8_t nick;
   uint8_t addr[8];
-  uint8_t event_tag[2];
+  uint8_t event_tag[4];
 } OW_switch_t;
 
 typedef struct event_t {
@@ -46,5 +46,6 @@ typedef struct action_t {
 typedef struct outputs_t {
   out_type type;
   uint8_t address;
+  uint8_t init;
   bool invert;
 } outputs_t;

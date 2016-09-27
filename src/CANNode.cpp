@@ -60,29 +60,29 @@
 static uint8_t node_id PROGMEM= { NODE_ID };
 static OW_switch_t switches[N_SWITCHES] PROGMEM={
 //  nick, addr[8], event_tag[sw1, sw2]
- { 201, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 1, 2 } }, //  Flur -> Bad
+ { 201, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 1, 11, 2, 12 } }, //  Flur -> Bad
 // { 202, { 0x12, 0xF7, 0x95, 0x4F, 0x0, 0x0, 0x0, 0x69 }, { 3, 4 } },
 // { 203, { 0x12, 0x68, 0x31, 0x67, 0x0, 0x0, 0x0, 0xBC }, { 5, 6 } },
- { 204, { 0x12, 0x5E, 0xFF, 0x55, 0x0, 0x0, 0x0, 0x2C }, { 3, 7 } }, // Treppe o/u??
- { 205, { 0x12, 0x7B, 0x44, 0x4D, 0x0, 0x0, 0x0, 0x6A }, { 7, 0 } }, // Treppe
- { 101, { 0x12, 0xC1, 0x4E, 0x67, 0x0, 0x0, 0x0, 0x74 }, { 3, 0 } }, // Flur -> Flur
- { 102, { 0x12, 0xA9, 0x97, 0x4F, 0x0, 0x0, 0x0, 0xD7 }, { 4, 0 } }, // Inka
- { 11, { 0x12, 0x9A, 0x94, 0x4F, 0x0, 0x0, 0x0, 0x2D }, { 6, 9 } }, // Bjarne
- { 12, { 0x12, 0x2F, 0x98, 0x4F, 0x0, 0x0, 0x0, 0xE0 }, { 8, 0 } }, // SZ
- { 0, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0 } }
+ { 204, { 0x12, 0x5E, 0xFF, 0x55, 0x0, 0x0, 0x0, 0x2C }, { 3, 3, 7, 7 } }, // Treppe u??
+ { 205, { 0x12, 0x7B, 0x44, 0x4D, 0x0, 0x0, 0x0, 0x6A }, { 7, 7, 3, 3 } }, // Treppe o
+ { 101, { 0x12, 0xC1, 0x4E, 0x67, 0x0, 0x0, 0x0, 0x74 }, { 3, 3, 0, 0 } }, // Flur -> Flur
+ { 102, { 0x12, 0xA9, 0x97, 0x4F, 0x0, 0x0, 0x0, 0xD7 }, { 4, 4, 0, 0 } }, // Inka
+ { 011, { 0x12, 0x9A, 0x94, 0x4F, 0x0, 0x0, 0x0, 0x2D }, { 6, 6, 255, 254 } }, // Bjarne
+ { 012, { 0x12, 0x2F, 0x98, 0x4F, 0x0, 0x0, 0x0, 0xE0 }, { 8, 8, 0, 0 } }, // SZ
+ { 0, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0, 0, 0 } }
 };
 static uint8_t switches_state[N_SWITCHES];
 static outputs_t outputs[N_OUTPUTS] PROGMEM={
 
-  { GPIO, 0,  true },   // 0 Bad Decke
-  { GPIO, 1,  true },   // 1  Bad Spiegel
-  { GPIO, 23, true },  // 2 Inka
-  { GPIO, 22, true },  // 3
-  { GPIO, 17, true },  // 4
-  { GPIO, 16, true },  // 5 Bjarne
-  { GPIO, 9,  true },   // 6 Treppe oben
-  { GPIO, 10, true },  // 7 Schlafzimmer
-  { NOP, 0xFF, false }
+  { GPIO, 0,  0, true },   // 0 Bad Decke
+  { GPIO, 1,  0, true },   // 1  Bad Spiegel
+  { GPIO, 23, 255, true },  // 2 Flur Oben
+  { GPIO, 22, 0, true },  // 3 Inka
+  { GPIO, 17, 0, true },  // 4
+  { GPIO, 16, 0, true },  // 5 Bjarne
+  { GPIO, 9,  255, true },   // 6 Treppe oben
+  { GPIO, 10, 0, true },  // 7 Schlafzimmer
+  { NOP, 0xFF, 0, 0 }
 };
 static uint8_t outputs_state[N_OUTPUTS];
 //  ID:
@@ -92,15 +92,18 @@ static uint8_t outputs_state[N_OUTPUTS];
 static event_t tx_events[N_EVENTS] PROGMEM={
 // |    --- ID ---    |
 // tag, prio, dst, cmd, data
-{ 1, 0x03, 0x01, 0x03, 0x01},
-{ 2, 0x03, 0x01, 0x03, 0x02},
+{ 1, 0x03, 0x01, 0x0, 0x01},
+{ 2, 0x03, 0x01, 0x0, 0x02},
 { 3, 0x03, 0x01, 0x03, 0x03},
 { 4, 0x03, 0x01, 0x03, 0x04},
 { 5, 0x03, 0x01, 0x03, 0x05},
 { 6, 0x03, 0x01, 0x03, 0x06},
 { 7, 0x03, 0x01, 0x03, 0x07},
 { 8, 0x03, 0x01, 0x03, 0x08},
-{ 9, 0x03, 0xff, OFF, 0x09},
+{ 11, 0x03, 0x01, 0x01, 0x01},
+{ 12, 0x03, 0x01, 0x01, 0x02},
+{ 255, 0x03, 0xff, OFF, 0x09},
+{ 254, 0x03, 0xff, ON, 0x09},
 { 10, 0x03, 0xff, 0x03, 0x01},
 { 10, 0x03, 0xff, 0x03, 0x02},
 { 10, 0x03, 0xff, 0x03, 0x03},
@@ -293,8 +296,14 @@ void setup(void)
   for (size_t i = 0; outputs[i].type != NOP; i++) {
     if (outputs[i].type == GPIO || outputs[i].type == PWM){
       //digitalWrite(outputs[i].address, LOW ^ outputs[action_map[i].outputs_idx].invert);
-      digitalWrite(outputs[i].address, HIGH );
       pinMode(outputs[i].address, OUTPUT);
+      if (outputs[i].init != 0 ) {
+        digitalWrite(outputs[i].address, HIGH ^ outputs[i].invert );
+      }
+      else {
+        digitalWrite(outputs[i].address, LOW ^ outputs[i].invert );
+
+      }
     }
   }
 
@@ -355,17 +364,26 @@ void loop(void)
       if (action[0]) {
         Serial.print("pioA of switch ");
         Serial.print(switches[s_idx].nick);
-        Serial.print(" is now ");
-        Serial.println(readout & 0x08);
-        send_event(switches[s_idx].event_tag[0]);
+        if (readout & 0x08) {
+          Serial.println(F(" is now ON"));
+          send_event(switches[s_idx].event_tag[0]);
+        } else {
+          Serial.println(F(" is now OFF"));
+          send_event(switches[s_idx].event_tag[1]);
+        }
         action[0] = 0;
       }
       if (action[1]) {
         Serial.print("pioB of switch ");
         Serial.print(switches[s_idx].nick);
         Serial.print(" is now ");
-        Serial.println(readout & 0x04);
-        send_event(switches[s_idx].event_tag[1]);
+        if (readout & 0x04) {
+          Serial.println(F(" is now ON"));
+          send_event(switches[s_idx].event_tag[2]);
+        } else {
+          Serial.println(F(" is now OFF"));
+          send_event(switches[s_idx].event_tag[3]);
+        }
         action[1] = 0;
       }
     }
