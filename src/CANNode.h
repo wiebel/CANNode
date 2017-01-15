@@ -1,5 +1,6 @@
 #include <Arduino.h>
-
+#ifndef CANNODE_TYPES
+#define CANNODE_TYPES
 enum out_type { GPIO, PWM, OW, I2C, SPI, WS2811, DMX, NOP };
 enum event_type { LOCAL, SEND};
 
@@ -49,3 +50,4 @@ typedef struct outputs_t {
   uint8_t init;
   bool invert;
 } outputs_t;
+#endif

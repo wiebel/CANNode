@@ -1,0 +1,103 @@
+// #include "CANNode.h"
+// Configuration
+#define NODE_ID 0x01
+
+// Misc
+
+#define N_EVENTS 64 							// size of events array
+#define N_SWITCHES 64 						// size of switch array
+#define N_OUTPUTS 64
+#define N_ACTIONS 64
+
+#define DEBUG 0										// 1 for noisy serial
+#define LED 13
+
+#define RELAY1 0
+#define RELAY2 1
+#define RELAY3 23
+#define RELAY4 22
+#define RELAY5 17
+#define RELAY6 16
+#define RELAY7 9
+#define RELAY8 10
+
+// OneWire
+#define OW_pin 14
+
+// Definitions
+static uint8_t node_id PROGMEM= { NODE_ID };
+static OW_switch_t switches[N_SWITCHES] PROGMEM={
+//  nick, addr[8], event_tag[sw1, sw2]
+ { 255, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0, 0, 0 } },
+ { 201, { 0x12, 0x5b, 0x27, 0x50, 0x0, 0x0, 0x0, 0x26 }, { 1, 11, 2, 12 } }, //  Flur -> Bad
+// { 202, { 0x12, 0xF7, 0x95, 0x4F, 0x0, 0x0, 0x0, 0x69 }, { 3, 4 } },
+// { 203, { 0x12, 0x68, 0x31, 0x67, 0x0, 0x0, 0x0, 0xBC }, { 5, 6 } },
+ { 204, { 0x12, 0x5E, 0xFF, 0x55, 0x0, 0x0, 0x0, 0x2C }, { 0, 0, 7, 7 } }, // Treppe Unten
+ { 205, { 0x12, 0x7B, 0x44, 0x4D, 0x0, 0x0, 0x0, 0x6A }, { 7, 7, 3, 3 } }, // Treppe Oben
+ { 101, { 0x12, 0xC1, 0x4E, 0x67, 0x0, 0x0, 0x0, 0x74 }, { 3, 3, 0, 0 } }, // Flur -> Flur
+ { 102, { 0x12, 0xA9, 0x97, 0x4F, 0x0, 0x0, 0x0, 0xD7 }, { 4, 4, 0, 0 } }, // Inka
+ { 011, { 0x12, 0x9A, 0x94, 0x4F, 0x0, 0x0, 0x0, 0x2D }, { 6, 6, 255, 254 } }, // Bjarne
+ { 012, { 0x12, 0x2F, 0x98, 0x4F, 0x0, 0x0, 0x0, 0xE0 }, { 8, 8, 0, 0 } }, // SZ
+ { 255, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0, 0, 0 } },
+ { 0, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0, 0, 0 } }
+};
+static uint8_t switches_state[N_SWITCHES];
+static outputs_t outputs[N_OUTPUTS] PROGMEM={
+// type, address(PIN), initial value, inverted
+  { GPIO, 0,  0, true },   // 0 Bad Decke
+  { GPIO, 1,  0, true },   // 1  Bad Spiegel
+  { GPIO, 23, 255, true },  // 2 Flur Oben
+  { GPIO, 22, 0, true },  // 3 Inka
+  { GPIO, 17, 0, true },  // 4
+  { GPIO, 16, 0, true },  // 5 Bjarne
+  { GPIO, 9,  255, true },   // 6 Treppe oben
+  { GPIO, 10, 0, true },  // 7 Schlafzimmer
+  { NOP, 0xFF, 0, 0 }
+};
+static uint8_t outputs_state[N_OUTPUTS];
+//  ID:
+// 3 bit Prio, 2bit TYPE, 8bit DST, 8bit SRC, 8bit CMD/SEQ
+// Type: 0: CMD, 1: FIRST, 2: CONT, 3: LAST
+// CMD:
+static event_t tx_events[N_EVENTS] PROGMEM={
+// |    --- ID ---    |
+// tag, prio, dst, cmd, data
+{ 1, 0x03, 0x01, OFF, 0x01},
+{ 2, 0x03, 0x01, OFF, 0x02},
+{ 3, 0x03, 0x01, TOGGLE, 0x03},
+{ 4, 0x03, 0x01, TOGGLE, 0x04},
+{ 5, 0x03, 0x01, TOGGLE, 0x05},
+{ 6, 0x03, 0x01, TOGGLE, 0x06},
+{ 7, 0x03, 0x01, TOGGLE, 0x07},
+{ 8, 0x03, 0x01, TOGGLE, 0x08},
+{ 11, 0x03, 0x01, ON, 0x01},
+{ 12, 0x03, 0x01, ON, 0x02},
+{ 255, 0x03, 0xff, OFF, 0x09},
+{ 254, 0x03, 0xff, ON, 0x09},
+{ 10, 0x03, 0xff, TOGGLE, 0x01},
+{ 10, 0x03, 0xff, TOGGLE, 0x02},
+{ 10, 0x03, 0xff, TOGGLE, 0x03},
+{ 10, 0x03, 0xff, TOGGLE, 0x04},
+{ 10, 0x03, 0xff, TOGGLE, 0x05},
+{ 10, 0x03, 0xff, TOGGLE, 0x06},
+{ 10, 0x03, 0xff, TOGGLE, 0x07},
+{ 10, 0x03, 0xff, TOGGLE, 0x08},
+
+//  { 0x01, 0x0CFF0103, 1, { 0xDE, 0xAD } },
+//  { 0x01, 0x0102DEAD, 2, { 0xDE, 0xAD } },
+//  { 0x02, 0x0204BEEF, 4, { 0xDE, 0xAD, 0xBE, 0xEF } }
+{ 0, 0, 0, 0, 0}
+};
+
+static action_t action_map[N_ACTIONS] PROGMEM={
+//  tag, output_idx
+  {1, 0},
+  {2, 1},
+  {3, 2},
+  {4, 3},
+  {5, 4},
+  {6, 5},
+  {7, 6},
+  {8, 7},
+  {9, 0},{9, 1},{9, 2},{9, 3},{9, 4},{9, 5},{9, 6},{9, 7},
+};
