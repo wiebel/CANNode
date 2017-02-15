@@ -29,7 +29,7 @@
 #define DS2406_WRITE_STATUS 0x55
 #define DS2406_READ_STATUS  0xaa
 #define DS2406_CHANNEL_ACCESS  0xf5
-#define DS2406_CHANNEL_CONTROL1 0x4c // 01001100 - Read Both Pins
+#define DS2406_CHANNEL_CONTROL1 0xcc // 11001100 - Read Both Pins, reset alarm
 #define DS2406_CHANNEL_CONTROL2 0xff // for future dev
 #define SKIP_ROM 0xCC
 #define PIO_A 0x20
@@ -230,7 +230,7 @@ void loop(void)
 {
   // service software timers based on Metro tick
   if ( METRO_OW_search.check() ) {
-    OW_1.reset_search();
+  OW_1.reset_search();
     while(OW_1.search(addr) == 1) {
         if ( OneWire::crc8( addr, 7) != addr[7]) {
             Serial.print("CRC is not valid!\n");
@@ -260,9 +260,25 @@ void loop(void)
       }
   }
   if (METRO_OW_read.check() ) {
+    int8_t retry = 0;
     for (uint8_t s_idx = 0; switches[s_idx].nick != 0; ++s_idx ){
       readout = read_DS2406(switches[s_idx].addr);
-      //if ((switches_state[s_idx] != readout) && (readout & 1<<7)) {
+      if (readout == 255){
+        if (switches_state[s_idx] != 255) {
+          ++retry;
+          if (retry <= 3) {
+            #if DEBUG
+              Serial.print(F("Retrying "));
+              Serial.print(switches[s_idx].nick);
+              Serial.print(F(" for "));
+              Serial.println(retry);
+            #endif /* DEBUG */
+            --s_idx; }
+          else { retry=0;}
+        }
+        continue;
+      }
+//      if ((switches_state[s_idx] != readout) && (readout != 255 )) {
       if (switches_state[s_idx] != readout) {
         tmp = readout ^ switches_state[s_idx];
         switches_state[s_idx] = readout;
