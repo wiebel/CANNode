@@ -1,4 +1,4 @@
-// #include "CANNode.h"
+#include "CANNode.h"
 // Configuration
 #define NODE_ID 0x02
 
@@ -27,15 +27,20 @@
 // Definitions
 static uint8_t node_id PROGMEM= { NODE_ID };
 static OW_switch_t switches[N_SWITCHES] PROGMEM={
-//  nick, addr[8], event_tag[sw1, sw2]
+//  nick, addr[8], event_tag[pioA_FALL, pioA_RISE, pioB_FALL, pioB_RISE]
  { 255, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0, 0, 0 } },
+ { 11, { 0x12, 0xF2, 0x2A, 0x66, 0x0, 0x0, 0x0, 0x41 }, { 1, 1, 1, 1 } },
+ { 12, { 0x12, 0x37, 0x8A, 0x4F, 0x0, 0x0, 0x0, 0xE5 }, { 2, 2, 2, 2 } },
+ { 21, { 0x12, 0x86, 0xB4, 0x54, 0x0, 0x0, 0x0, 0x5F }, { 3, 3, 4, 4 } },
+ { 22, { 0x12, 0x84, 0xAD, 0x4F, 0x0, 0x0, 0x0, 0x12 }, { 5, 5, 6, 6 } },
+ { 31, { 0x12, 0x88, 0xDD, 0x53, 0x0, 0x0, 0x0, 0x28 }, { 210, 211, 220, 221 } }, // Roldenschalter (A - UP, B - DOWN)
  { 0, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0, 0, 0 } }
 };
 static uint8_t switches_state[N_SWITCHES];
 static outputs_t outputs[N_OUTPUTS] PROGMEM={
 // type, address(PIN), initial value, inverted
-  { GPIO, 0,  0, true },   	// 0 
-  { GPIO, 1,  0, true },   	// 1 
+  { GPIO, 0,  0, true },   	// 0
+  { GPIO, 1,  0, true },   	// 1
   { GPIO, 23, 255, true },  	// 2
   { GPIO, 22, 0, true },  	// 3
   { GPIO, 17, 0, true },  	// 4
@@ -62,6 +67,10 @@ static event_t tx_events[N_EVENTS] PROGMEM={
 { 8, 0x03, 0x01, TOGGLE, 0x08},
 { 11, 0x03, 0x01, ON, 0x01},
 { 12, 0x03, 0x01, ON, 0x02},
+{ 210, 0x03, 0xff, OFF, 0x06},
+{ 211, 0x03, 0xff, ON, 0x06},
+{ 220, 0x03, 0xff, OFF, 0x07},
+{ 221, 0x03, 0xff, ON, 0x07},
 { 255, 0x03, 0xff, OFF, 0x09},
 { 254, 0x03, 0xff, ON, 0x09},
 { 10, 0x03, 0xff, TOGGLE, 0x01},
@@ -90,4 +99,8 @@ static action_t action_map[N_ACTIONS] PROGMEM={
   {7, 6},
   {8, 7},
   {9, 0},{9, 1},{9, 2},{9, 3},{9, 4},{9, 5},{9, 6},{9, 7},
+  {210, 210},
+  {211, 211},
+  {220, 220},
+  {221, 221},
 };

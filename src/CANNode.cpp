@@ -13,13 +13,14 @@
 
 // For Node definition:
 
-#include "Node_1_def.h"
+#include "Node_3_def.h"
 
 // Metro ticks in ms
 #define METRO_CAN_tick 1
 #define METRO_OW_read_tick 20
 #define METRO_OW_search_tick 10000
 // CAN bus
+//#define CAN_speed 125000
 #define CAN_speed 125000
 #define CAN_RS_PIN 2							//
 #define TEST_ADDR "125B275000000026"
@@ -272,10 +273,10 @@ void loop(void)
         Serial.print("pioA of switch ");
         Serial.print(switches[s_idx].nick);
         if (readout & 0x08) {
-          Serial.println(F(" is now ON"));
+          Serial.println(F(" is now OFF"));
           send_event(switches[s_idx].event_tag[0]);
         } else {
-          Serial.println(F(" is now OFF"));
+          Serial.println(F(" is now ON"));
           send_event(switches[s_idx].event_tag[1]);
         }
         action[0] = 0;
@@ -283,12 +284,11 @@ void loop(void)
       if (action[1]) {
         Serial.print("pioB of switch ");
         Serial.print(switches[s_idx].nick);
-        Serial.print(" is now ");
         if (readout & 0x04) {
-          Serial.println(F(" is now ON"));
+          Serial.println(F(" is now OFF"));
           send_event(switches[s_idx].event_tag[2]);
         } else {
-          Serial.println(F(" is now OFF"));
+          Serial.println(F(" is now ON"));
           send_event(switches[s_idx].event_tag[3]);
         }
         action[1] = 0;
