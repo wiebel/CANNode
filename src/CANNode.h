@@ -51,4 +51,7 @@ typedef struct outputs_t {
   bool invert;
 } outputs_t;
 #endif
+<<<<<<< HEAD
 // mirror test 02 
+=======
+>>>>>>> parent of f052826... mirror test
