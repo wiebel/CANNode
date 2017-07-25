@@ -34,6 +34,8 @@ static OW_switch_t switches[N_SWITCHES] PROGMEM={
  //{ 21, { 0x12, 0x86, 0xB4, 0x54, 0x0, 0x0, 0x0, 0x5F }, { 3, 3, 4, 4 } },
  { 22, { 0x12, 0x84, 0xAD, 0x4F, 0x0, 0x0, 0x0, 0x12 }, { 1, 1, 2, 2 } }, // EZ -> Küche
 // { 31, { 0x12, 0x88, 0xDD, 0x53, 0x0, 0x0, 0x0, 0x28 }, { 210, 211, 220, 221 } }, // Roldenschalter (A - UP, B - DOWN)
+ { 23, { 0x12, 0x68, 0x31, 0x67, 0x0, 0x0, 0x0, 0xBC }, { 2, 2, 3, 3 } }, // Terrasse
+ { 24, { 0x12, 0x88, 0xDD, 0x53, 0x0, 0x0, 0x0, 0x28 }, { 50, 51, 40, 41 } }, // Rolladen
 };
 static uint8_t switches_state[N_SWITCHES];
 static outputs_t outputs[N_OUTPUTS] PROGMEM={
@@ -46,6 +48,12 @@ static outputs_t outputs[N_OUTPUTS] PROGMEM={
   { GPIO, 16, 0, true },  	// 5
   { GPIO, 9,  255, true },   	// 6
   { GPIO, 10, 0, true },  	// 7
+  { GPIO, 15, 0, true },  	// 8
+  { GPIO, 20, 0, true },  	// 9
+  { GPIO, 21, 0, true },  	// 10
+  { GPIO, 13, 0, true },  	// 11
+  { GPIO, 18, 0, true },  	// 12
+  { GPIO, 19, 0, true },  	// 13
   { NOP, 0xFF, 0, 0 }
 };
 static uint8_t outputs_state[N_OUTPUTS];
@@ -59,11 +67,15 @@ static event_t tx_events[N_EVENTS] PROGMEM={
 { 1, 0x03, 0x03, TOGGLE, 0x01},
 { 2, 0x03, 0x03, TOGGLE, 0x02},
 { 3, 0x03, 0x03, TOGGLE, 0x03},
-{ 4, 0x03, 0x03, TOGGLE, 0x04},
-{ 5, 0x03, 0x03, TOGGLE, 0x05},
+{ 40, 0x03, 0x03, OFF, 0x04},
+{ 41, 0x03, 0x03, OFF, 0x05},
+{ 41, 0x03, 0x03, ON, 0x04},
+{ 50, 0x03, 0x03, OFF, 0x05},
+{ 51, 0x03, 0x03, OFF, 0x04},
+{ 51, 0x03, 0x03, ON, 0x05},
 { 6, 0x03, 0x03, TOGGLE, 0x06},
 { 7, 0x03, 0x03, TOGGLE, 0x07},
-{ 8, 0x03, 0x03, TOGGLE, 0x08},
+{ 8, 0x03, 0x03, TOGGLE, 0x00},
 { 11, 0x03, 0x01, ON, 0x01},
 { 12, 0x03, 0x01, ON, 0x02},
 { 210, 0x03, 0xff, OFF, 0x06},
@@ -98,6 +110,19 @@ static action_t action_map[N_ACTIONS] PROGMEM={
   {7, 6},
   {8, 7},
   {9, 0},{9, 1},{9, 2},{9, 3},{9, 4},{9, 5},{9, 6},{9, 7},
+  {101, 1},
+  {102, 2},
+  {103, 3},
+  {104, 4},
+  {105, 5},
+  {106, 6},
+  {107, 7},
+  {108, 8},
+  {109, 9},
+  {110, 10},
+  {111, 11},
+  {112, 12},
+  {113, 13},
   {210, 210},
   {211, 211},
   {220, 220},
