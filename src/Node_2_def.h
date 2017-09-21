@@ -10,16 +10,16 @@
 #define N_ACTIONS 64
 
 #define DEBUG 0										// 1 for noisy serial
-#define LED 13
+#define ONBOARD_LED 13
 
-#define RELAY1 0
-#define RELAY2 1
-#define RELAY3 23
-#define RELAY4 22
-#define RELAY5 17
-#define RELAY6 16
-#define RELAY7 9
-#define RELAY8 10
+#define LED_PIN     20
+#define COLOR_ORDER GRB
+#define CHIPSET     WS2812
+#define NUM_LEDS    4
+
+#define BRIGHTNESS  255
+//#define TEMP Tungsten100W
+#define TEMP Candle
 
 // OneWire
 #define OW_pin 14
@@ -45,9 +45,10 @@ static outputs_t outputs[N_OUTPUTS] PROGMEM={
   { GPIO, 22, 0, true },  	// 3
   { GPIO, 17, 0, true },  	// 4
   { GPIO, 16, 0, true },  	// 5
-  { GPIO, 9,  255, true },   	// 6
-  { GPIO, 10, 0, true },  	// 7
-  { NOP, 0xFF, 0, 0 }
+  { GPIO, 19,  255, true },   	// 6
+  { GPIO, 18, 0, true },  	// 7
+  { LED, 21, 0, false },  	// 8
+  { NOP, 0xFF, 0, 0 },
 };
 static uint8_t outputs_state[N_OUTPUTS];
 //  ID:
@@ -99,6 +100,7 @@ static action_t action_map[N_ACTIONS] PROGMEM={
   {7, 6},
   {8, 7},
   {9, 0},{9, 1},{9, 2},{9, 3},{9, 4},{9, 5},{9, 6},{9, 7},
+  {10, 8},
   {210, 210},
   {211, 211},
   {220, 220},

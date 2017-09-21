@@ -1,13 +1,14 @@
 #include <Arduino.h>
 #ifndef CANNODE_TYPES
 #define CANNODE_TYPES
-enum out_type { GPIO, PWM, OW, I2C, SPI, WS2811, DMX, NOP };
+enum out_type { GPIO, PWM, OW, I2C, SPI, LED, DMX, NOP };
 enum event_type { LOCAL, SEND};
 
 enum action_type { OFF, ON, VALUE, TOGGLE };
 enum telegram_type { ALERT, EVENT, NOTIFY, INFO };
 
 typedef struct CAN_telegram_t {
+  // 3bit prio -
   uint32_t id;
   uint8_t length;
   uint8_t buf[8];
