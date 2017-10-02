@@ -1,3 +1,4 @@
+#include "CANNode.h"
 // Configuration
 #define NODE_ID 0x03
 

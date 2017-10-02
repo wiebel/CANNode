@@ -10,12 +10,11 @@
 #include <Metro.h>
 #include <FlexCAN.h>
 #include <OneWire.h>
-#include <FastLED.h>
 #include "CANNode.h"
 
 // For Node definition:
 
-#include "Node_2_def.h"
+#include "Node_3_def.h"
 
 // Metro ticks in ms
 #define METRO_CAN_tick 1
@@ -53,12 +52,9 @@
 
 
 
-uint8_t led = ONBOARD_LED;
+uint8_t led = LED;
 uint8_t state;
 uint8_t pin_state;
-uint8_t led_current_value;
-uint8_t led_last_value;
-int serial_in;
 bool action[2];
 // Metro
 Metro METRO_CAN = Metro(METRO_CAN_tick);
@@ -75,16 +71,11 @@ OneWire OW_1(OW_pin);
 
 telegram_comp_t mesg_comp;
 
-// event info = { 1, 0x03, 0x01, OFF, 0x01};
-
 static CAN_message_t txmsg,rxmsg;
 static uint8_t hex[17] = "0123456789abcdef";
 
 int txCount,rxCount;
 unsigned int txTimer,rxTimer;
-
-
-CRGB leds[NUM_LEDS];
 
 
 // Functions ------------------------------^-------------------------
@@ -133,7 +124,7 @@ uint8_t toggle_Pin(uint8_t pin){
 }
 
 uint32_t forgeid(event_t event){
-  return (event.prio<<26)+(event.dst<<18)+(NODE_ID<<8)+event.cmd;
+  return (event.prio<<26)+(event.dst<<16)+(NODE_ID<<8)+event.cmd;
 }
 
 telegram_comp_t parse_CAN(CAN_message_t mesg){
@@ -165,93 +156,34 @@ void send_event (uint8_t trig_event){
       txmsg.len = 0;
     }
   }
-void switch_leds (uint8_t value) {
-  led_last_value = led_current_value;
-//  FastLED.setTemperature( TEMP );
-//  FastLED.setBrightness( BRIGHTNESS );
-  memset8( leds, value, NUM_LEDS * sizeof(CRGB));
-  led_current_value = value;
-  FastLED.show();
-}
-void toggle_leds ( void ) {
-  if ( led_current_value != 0) {
-    switch_leds(0);
-  } else {
-    if ( led_current_value == led_last_value){
-      switch_leds(255);
-    } else {
-      switch_leds(led_last_value);
-    }
-  }
-}
-
 void take_action (action_type type, uint8_t tag ){
 for (uint8_t i = 0; action_map[i].tag != 0 ; i++) {
   if ( action_map[i].tag == tag ) {
     switch ( type ) {
       case OFF:
-        switch ( outputs[action_map[i].outputs_idx].type ){
-          case GPIO:
-            digitalWrite(outputs[action_map[i].outputs_idx].address,LOW ^ outputs[action_map[i].outputs_idx].invert);
-            break;
-          case LED:
-            switch_leds(0);
-            break;
-          }
+        digitalWrite(outputs[action_map[i].outputs_idx].address,LOW ^ outputs[action_map[i].outputs_idx].invert);
         Serial.print(F("Switching OFF Output: "));
         Serial.println(action_map[i].outputs_idx);
         break;
       case ON:
-        switch ( outputs[action_map[i].outputs_idx].type ){
-          case GPIO:
-            digitalWrite(outputs[action_map[i].outputs_idx].address,HIGH ^ outputs[action_map[i].outputs_idx].invert);
-            break;
-          case LED:
-            switch_leds(255);
-            break;
-          }
         digitalWrite(outputs[action_map[i].outputs_idx].address, HIGH ^ outputs[action_map[i].outputs_idx].invert);
         Serial.print(F("Switching ON Output: "));
         Serial.println(action_map[i].outputs_idx);
         break;
       case TOGGLE:
+        pin_state = toggle_Pin(outputs[action_map[i].outputs_idx].address);
         Serial.print(F("Toggeling Output: "));
         Serial.print(action_map[i].outputs_idx);
         Serial.print(F(" to new state: "));
-        switch ( outputs[action_map[i].outputs_idx].type ){
-          case GPIO:
-            pin_state = toggle_Pin(outputs[action_map[i].outputs_idx].address);
-            Serial.println(pin_state ^ outputs[action_map[i].outputs_idx].invert);
-            break;
-          case LED:
-            toggle_leds();
-            Serial.println(led_current_value);
-            break;
-          }
+        Serial.println(pin_state ^ outputs[action_map[i].outputs_idx].invert);
         break;
       case VALUE:
-        switch ( outputs[action_map[i].outputs_idx].type ){
-          case GPIO:
-            if (VALUE == 0) {
-              digitalWrite(outputs[action_map[i].outputs_idx].address,LOW ^ outputs[action_map[i].outputs_idx].invert);
-            } else {
-              digitalWrite(outputs[action_map[i].outputs_idx].address, HIGH ^ outputs[action_map[i].outputs_idx].invert);
-            }
-            break;
-          case LED:
-            switch_leds(VALUE);
-            break;
-          }
-        Serial.print(F("Setting Output: "));
-        Serial.print(action_map[i].outputs_idx);
-        Serial.print(F(" to value: "));
-        Serial.println(VALUE);
+        Serial.println(F("TBD"));
         break;
       }
     }
   }
 }
-
 
 // -------------------------------------------------------------
 void setup(void)
@@ -268,11 +200,6 @@ void setup(void)
   CANbus.begin();
   txmsg.ext = 1;
   txmsg.timeout = 100;
-  // FastLED
-  //delay(3000); // sanity delay
-  FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-  FastLED.setBrightness( BRIGHTNESS );
-  FastLED.setTemperature( TEMP );
 
   // outputs
   for (size_t i = 0; outputs[i].type != NOP; i++) {
@@ -394,71 +321,52 @@ void loop(void)
       --rxTimer;
     }
   }
-  while ( CANbus.read(rxmsg) ) {
-    //hexDump( sizeof(rxmsg), (uint8_t *)&rxmsg );
-    DEBUG_WRITE(rxmsg.buf[0]);
-    rxCount++;
-      Serial.print("GOT=");
-      Serial.print(rxmsg.id,HEX);
-      for (uint8_t i=0; i<rxmsg.len; i++){
-        Serial.print(":");
-        Serial.print(rxmsg.buf[i],HEX);
-      }
-      Serial.println();
-      mesg_comp= parse_CAN(rxmsg);
-      if (mesg_comp.dst == 0xFF || mesg_comp.dst == NODE_ID ) {
+    while ( CANbus.read(rxmsg) ) {
+      //hexDump( sizeof(rxmsg), (uint8_t *)&rxmsg );
+      DEBUG_WRITE(rxmsg.buf[0]);
+      rxCount++;
+        Serial.print("GOT=");
+        Serial.print(rxmsg.id,HEX);
+        for (uint8_t i=0; i<rxmsg.len; i++){
+          Serial.print(":");
+          Serial.print(rxmsg.buf[i],HEX);
+        }
+        Serial.println();
+        mesg_comp= parse_CAN(rxmsg);
+        if (mesg_comp.dst == 0xFF || mesg_comp.dst == NODE_ID ) {
 
-      switch (mesg_comp.cmd) {
-        // OFF
-        case 0x00 :
-          take_action(OFF, mesg_comp.buf[0]);
-        break;
-        // ON
-        case 0x01 :
-          take_action(ON, mesg_comp.buf[0]);
-        break;
-        // VALUE
-        case 0x02 :
-        break;
-        // TOGGLE
-        case 0x03:
-          take_action(TOGGLE, mesg_comp.buf[0]);
-        break;
+        switch (mesg_comp.cmd) {
+          // OFF
+          case 0x00 :
+            take_action(OFF, mesg_comp.buf[0]);
+          break;
+          // ON
+          case 0x01 :
+            take_action(ON, mesg_comp.buf[0]);
+          break;
+          // VALUE
+          case 0x02 :
+          break;
+          // TOGGLE
+          case 0x03:
+            take_action(TOGGLE, mesg_comp.buf[0]);
+          break;
+        }
       }
+      rxCount = 0;
     }
-    rxCount = 0;
-  }
-  txTimer = 100;//milliseconds
-  if (txmsg.len != 0){
-    Serial.print("PUT=");
-    Serial.print(txmsg.id,HEX);
-      for (uint8_t i=0; i<txmsg.len; i++){
-        Serial.print(":");
-        Serial.print(txmsg.buf[i],HEX);
-      }
-      Serial.print("\n");
-    CANbus.write(txmsg);
-    txmsg.buf[0]++;
-    txmsg.len = 0;
-  }
-  if (Serial.available() > 0) {
-    // read the incoming byte:
-    serial_in = Serial.read();
-    switch (serial_in) {
-      case 0x31 : take_action(TOGGLE, 1); break;
-      case 0x32 : take_action(TOGGLE, 2); break;
-      case 0x33 : take_action(TOGGLE, 3); break;
-      case 0x34 : take_action(TOGGLE, 4); break;
-      case 0x35 : take_action(TOGGLE, 5); break;
-      case 0x36 : take_action(TOGGLE, 6); break;
-      case 0x37 : take_action(TOGGLE, 7); break;
-      case 0x38 : take_action(TOGGLE, 8); break;
-      case 0x39 : take_action(TOGGLE, 10); break;
-//      case 0x38 : digitalWrite(13, 1); break;
-//      case 0x39 : digitalWrite(13, 0); break;
+    txTimer = 100;//milliseconds
+    if (txmsg.len != 0){
+      Serial.print("PUT=");
+      Serial.print(txmsg.id,HEX);
+        for (uint8_t i=0; i<txmsg.len; i++){
+          Serial.print(":");
+          Serial.print(txmsg.buf[i],HEX);
+        }
+        Serial.print("\n");
+      CANbus.write(txmsg);
+      txmsg.buf[0]++;
+      txmsg.len = 0;
     }
-    // say what you got:
-    Serial.print("I received: ");
-    Serial.println(serial_in, HEX);
-  }
+
 }
