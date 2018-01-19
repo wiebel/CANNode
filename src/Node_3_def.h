@@ -42,18 +42,12 @@ static outputs_t outputs[N_OUTPUTS] PROGMEM={
 // type, address(PIN), initial value, inverted
   { GPIO, 0,  0, true },   	// 0
   { GPIO, 1,  0, true },   	// 1
-  { GPIO, 23, 255, true },  	// 2
+  { GPIO, 23, 0, true },  	// 2
   { GPIO, 22, 0, true },  	// 3
   { GPIO, 17, 0, true },  	// 4
   { GPIO, 16, 0, true },  	// 5
-  { GPIO, 9,  255, true },   	// 6
-  { GPIO, 10, 0, true },  	// 7
-  { GPIO, 15, 0, true },  	// 8
-  { GPIO, 20, 0, true },  	// 9
-  { GPIO, 21, 0, true },  	// 10
-  { GPIO, 13, 0, true },  	// 11
-  { GPIO, 18, 0, true },  	// 12
-  { GPIO, 19, 0, true },  	// 13
+  { GPIO, 19, 0, true },  	// 6
+  { GPIO, 18, 0, true },  	// 7
   { NOP, 0xFF, 0, 0 }
 };
 static uint8_t outputs_state[N_OUTPUTS];
@@ -75,7 +69,7 @@ static event_t tx_events[N_EVENTS] PROGMEM={
 { 51, 0x03, 0x03, ON, 0x05},
 { 6, 0x03, 0x03, TOGGLE, 0x06},
 { 7, 0x03, 0x03, TOGGLE, 0x07},
-{ 8, 0x03, 0x03, TOGGLE, 0x00},
+{ 8, 0x03, 0x03, TOGGLE, 0x08},
 { 11, 0x03, 0x01, ON, 0x01},
 { 12, 0x03, 0x01, ON, 0x02},
 { 210, 0x03, 0xff, OFF, 0x06},
