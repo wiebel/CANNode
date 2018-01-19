@@ -1,11 +1,10 @@
 #include <Arduino.h>
-#define FASTLED_ALLOW_INTERRUPTS 0
 
 // -------------------------------------------------------------
 // CANNode for Teensy 3.1/3.2
 //
 // by wiebel
-// foo 
+//
 
 #include <Metro.h>
 #include <FlexCAN.h>
@@ -14,7 +13,7 @@
 
 // For Node definition:
 
-#include "Node_1_def.h"
+#include "Node_2_def.h"
 
 // Metro ticks in ms
 #define METRO_CAN_tick 1
@@ -37,7 +36,6 @@
 #define PIO_B 0x40
 
 #define DS2406_BUF_LEN 10
-
 // Initialisation
 // Misc
 #if DEBUG

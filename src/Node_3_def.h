@@ -40,12 +40,17 @@ static outputs_t outputs[N_OUTPUTS] PROGMEM={
 // type, address(PIN), initial value, inverted
   { GPIO, 0,  0, true },   	// 0
   { GPIO, 1,  0, true },   	// 1
-  { GPIO, 23, 255, true },  	// 2
+  { GPIO, 23, 0, true },  	// 2
   { GPIO, 22, 0, true },  	// 3
   { GPIO, 17, 0, true },  	// 4
   { GPIO, 16, 0, true },  	// 5
+<<<<<<< HEAD
   { GPIO, 9,  255, true },   	// 6
   { GPIO, 10, 0, true },  	// 7
+=======
+  { GPIO, 19, 0, true },  	// 6
+  { GPIO, 18, 0, true },  	// 7
+>>>>>>> led
   { NOP, 0xFF, 0, 0 }
 };
 static uint8_t outputs_state[N_OUTPUTS];
