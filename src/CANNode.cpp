@@ -2,8 +2,8 @@
 
 // -------------------------------------------------------------
 // CANNode for Teensy 3.1/3.2
-//
-// by wiebel
+// GPLv2
+// by wiebel (c) 2015-2018 
 //
 
 #include <Metro.h>

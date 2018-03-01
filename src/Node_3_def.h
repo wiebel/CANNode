@@ -1,5 +1,6 @@
 #include "CANNode.h"
-// Configuration
+
+// Node 03 - Keller
 #define NODE_ID 0x03
 
 // Misc

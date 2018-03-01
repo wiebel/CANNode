@@ -1,4 +1,6 @@
-// Configuration
+#include "CANNode.h"
+
+// Node 01 - Dachstuhl
 #define NODE_ID 0x01
 
 // Misc
