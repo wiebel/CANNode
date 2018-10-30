@@ -3,9 +3,10 @@
 // -------------------------------------------------------------
 // CANNode for Teensy 3.1/3.2
 // GPLv2
-// by wiebel (c) 2015-2018 
+// by wiebel (c) 2015-2018
 // github_push_test_01
 
+#include <vector>
 #include <Metro.h>
 #include <FlexCAN.h>
 #include <OneWire.h>
@@ -121,9 +122,30 @@ uint8_t toggle_Pin(uint8_t pin){
   return digitalRead(pin);
 }
 
-uint32_t forgeid(event_t event){
+uint32_t event2id(event_t event){
   return (event.prio<<26)+(event.dst<<16)+(NODE_ID<<8)+event.cmd;
 }
+
+uint32_t forgeid(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t type=0){
+  // CMD:
+  // Type: 0: SINGLE, 1: FIRST, 2: CONT, 3: LAST
+  return (prio<<26)+(type<<24)+(dst<<16)+(NODE_ID<<8)+cmd;
+}
+int CAN_send(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t data[], uint8_t type=0){
+  txmsg.id = forgeid(prio, dst, cmd, type);
+  txmsg.len = sizeof(data);
+  for (uint8_t i = 0; i < txmsg.len; i++) { txmsg.buf[i] = data[i]; }
+  CANbus.write(txmsg);
+}
+
+int CAN_send(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t data, uint8_t type=0){
+  txmsg.id = forgeid(prio, dst, cmd, type);
+  //txmsg.len = sizeof(data);
+  txmsg.len = 1;
+  txmsg.buf[0] = data;
+  CANbus.write(txmsg);
+}
+
 
 telegram_comp_t parse_CAN(CAN_message_t mesg){
   telegram_comp_t tmp;
@@ -142,7 +164,7 @@ void send_event (uint8_t trig_event){
 
   for (uint8_t e_idx = 0; tx_events[e_idx].tag != 0; e_idx++)
     if ( tx_events[e_idx].tag == trig_event ) {
-      txmsg.id = forgeid(tx_events[e_idx]);
+      txmsg.id = event2id(tx_events[e_idx]);
       txmsg.len = 1;
 //      txmsg.timeout = 100;
       txmsg.buf[0]= tx_events[e_idx].data;
@@ -154,9 +176,11 @@ void send_event (uint8_t trig_event){
       txmsg.len = 0;
     }
   }
-void take_action (action_type type, uint8_t tag ){
+
+void take_action (cmd_type type, uint8_t tag ){
 for (uint8_t i = 0; action_map[i].tag != 0 ; i++) {
   if ( action_map[i].tag == tag ) {
+    bool old_state = digitalRead(outputs[action_map[i].outputs_idx].address);
     switch ( type ) {
       case OFF:
         digitalWrite(outputs[action_map[i].outputs_idx].address,LOW ^ outputs[action_map[i].outputs_idx].invert);
@@ -178,6 +202,23 @@ for (uint8_t i = 0; action_map[i].tag != 0 ; i++) {
       case VALUE:
         Serial.println(F("TBD"));
         break;
+      }
+      bool new_state = digitalRead(outputs[action_map[i].outputs_idx].address);
+      if ( old_state == new_state) {
+        switch ( new_state ) {
+          case 0:
+            CAN_send(NOTIFY, 0xFF, OFF, action_map[i].outputs_idx);
+          case 1:
+            CAN_send(NOTIFY, 0xFF, ON, action_map[i].outputs_idx);
+        }
+      }
+      else {
+        switch ( new_state ) {
+          case 0:
+            CAN_send(NOTIFY, 0xFF, T_OFF, action_map[i].outputs_idx);
+          case 1:
+            CAN_send(NOTIFY, 0xFF, T_ON, action_map[i].outputs_idx);
+        }
       }
     }
   }
@@ -252,8 +293,11 @@ void loop(void)
             }
           }
         if (new_owd) {
+          // send new ID to all
+          CAN_send(NOTIFY, 0xFF, NEW_TWID, addr);
           Serial.print("Found a device: ");
           print_OW_Device(addr);
+
           Serial.println();
         }
 

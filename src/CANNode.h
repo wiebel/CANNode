@@ -4,8 +4,8 @@
 enum out_type { GPIO, PWM, OW, I2C, SPI, WS2811, DMX, NOP };
 enum event_type { LOCAL, SEND};
 
-enum action_type { OFF, ON, VALUE, TOGGLE };
-enum telegram_type { ALERT, EVENT, NOTIFY, INFO };
+enum cmd_type { OFF, ON, VALUE, TOGGLE, T_OFF, T_ON, BIN_DUMP, NEW_TWID };
+enum telegram_prio { ALERT, EVENT, NOTIFY, INFO };
 
 typedef struct CAN_telegram_t {
   uint32_t id;
