@@ -1293,9 +1293,9 @@ Text Label 8450 2400 0    50   ~ 0
 Text Label 8450 2500 0    50   ~ 0
 20
 Text Label 8450 2600 0    50   ~ 0
-17
+19
 Text Label 8450 2700 0    50   ~ 0
-16
+18
 Text Label 8450 2900 0    50   ~ 0
 10
 Text Label 8500 2800 0    50   ~ 0
