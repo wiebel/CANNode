@@ -824,12 +824,12 @@ $EndComp
 $Comp
 L Device:R_Small R2
 U 1 1 5C60824F
-P 1750 2600
-F 0 "R2" V 1650 2600 50  0000 C CNN
-F 1 "120" V 1855 2600 50  0000 C CNN
-F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 1750 2600 50  0001 C CNN
-F 3 "~" H 1750 2600 50  0001 C CNN
-	1    1750 2600
+P 1800 2600
+F 0 "R2" V 1700 2600 50  0000 C CNN
+F 1 "120" V 1905 2600 50  0000 C CNN
+F 2 "Resistor_SMD:R_0805_2012Metric_Pad1.15x1.40mm_HandSolder" H 1800 2600 50  0001 C CNN
+F 3 "~" H 1800 2600 50  0001 C CNN
+	1    1800 2600
 	-1   0    0    1   
 $EndComp
 $Comp
@@ -844,21 +844,21 @@ F 3 "~" H 1250 2650 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 Wire Wire Line
-	1550 2450 1550 2550
+	1650 2450 1650 2550
 Wire Wire Line
-	1550 2550 1450 2550
+	1650 2550 1450 2550
 Wire Wire Line
-	1550 2450 1750 2450
+	1650 2450 1800 2450
 Wire Wire Line
-	1450 2650 1550 2650
+	1450 2650 1650 2650
 Wire Wire Line
-	1550 2650 1550 2750
+	1650 2650 1650 2750
 Wire Wire Line
-	1550 2750 1750 2750
+	1650 2750 1800 2750
 Wire Wire Line
-	1750 2700 1750 2750
+	1800 2700 1800 2750
 Wire Wire Line
-	1750 2500 1750 2450
+	1800 2500 1800 2450
 $Comp
 L power:+12V #PWR?
 U 1 1 5C608269
@@ -1680,16 +1680,8 @@ Wire Wire Line
 Wire Wire Line
 	6050 5300 5400 5300
 Connection ~ 5400 5300
-Wire Wire Line
-	1750 2750 1900 2750
-Wire Wire Line
-	1900 2750 1900 2650
-Connection ~ 1750 2750
-Wire Wire Line
-	1750 2450 1900 2450
-Wire Wire Line
-	1900 2450 1900 2550
-Connection ~ 1750 2450
+Connection ~ 1800 2750
+Connection ~ 1800 2450
 Wire Wire Line
 	1800 3550 1900 3550
 Connection ~ 1800 3550
@@ -1949,13 +1941,13 @@ Text Label 3150 2700 0    50   ~ 0
 DI1_7
 Text Label 3200 3200 1    50   ~ 0
 DI2_8
-Text Label 1900 2550 0    50   ~ 0
+Text Label 1900 2450 0    50   ~ 0
 D1+
-Text Label 1900 2650 0    50   ~ 0
+Text Label 1900 2750 0    50   ~ 0
 D1-
-Text Label 1650 3000 0    50   ~ 0
+Text Label 1950 3150 0    50   ~ 0
 D2+
-Text Label 1650 3300 0    50   ~ 0
+Text Label 1950 3250 0    50   ~ 0
 D2-
 Text Label 1950 3450 0    50   ~ 0
 D3+
@@ -2026,10 +2018,6 @@ Wire Wire Line
 Wire Wire Line
 	1800 3300 1950 3300
 Wire Wire Line
-	1900 2550 2050 2550
-Wire Wire Line
-	1900 2650 2000 2650
-Wire Wire Line
 	6050 4150 8450 4150
 Wire Wire Line
 	6050 3000 6050 4150
@@ -2059,9 +2047,9 @@ Wire Wire Line
 Wire Wire Line
 	1950 3150 2100 3150
 Wire Wire Line
-	2050 2850 2050 2550
+	2050 2850 2050 2450
 Wire Wire Line
-	2000 2650 2000 2950
+	2000 2750 2000 2950
 Wire Wire Line
 	1900 1600 2200 1600
 Wire Wire Line
@@ -2157,4 +2145,8 @@ Wire Wire Line
 	2200 5200 2350 5200
 Wire Wire Line
 	2200 5400 2350 5400
+Wire Wire Line
+	1800 2750 2000 2750
+Wire Wire Line
+	1800 2450 2050 2450
 $EndSCHEMATC
