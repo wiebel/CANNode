@@ -131,9 +131,10 @@ uint32_t forgeid(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t type=0){
   // Type: 0: SINGLE, 1: FIRST, 2: CONT, 3: LAST
   return (prio<<26)+(type<<24)+(dst<<16)+(NODE_ID<<8)+cmd;
 }
-int CAN_send(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t data[], uint8_t type=0){
+
+int CAN_send(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t* data, uint8_t data_size, uint8_t type=0){
   txmsg.id = forgeid(prio, dst, cmd, type);
-  txmsg.len = sizeof(data);
+  txmsg.len = data_size;
   for (uint8_t i = 0; i < txmsg.len; i++) { txmsg.buf[i] = data[i]; }
   CANbus.write(txmsg);
 }
@@ -294,11 +295,10 @@ void loop(void)
           }
         if (new_owd) {
           // send new ID to all
-          CAN_send(NOTIFY, 0xFF, NEW_TWID, addr);
           Serial.print("Found a device: ");
           print_OW_Device(addr);
-
           Serial.println();
+          CAN_send(NOTIFY, 0xFF, NEW_TWID, addr, sizeof(addr));
         }
 
       }
