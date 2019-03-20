@@ -64,6 +64,7 @@ FlexCAN CANbus(CAN_speed);
 // FLEXCAN0_MCR &= ~FLEXCAN_MCR_SRX_DIS;
 // OneWire
 uint8_t addr[8];
+uint8_t data[8];
 uint8_t buffer[DS2406_BUF_LEN];
 uint8_t readout,trig_event,event_idx,tmp;
 OneWire OW_1(OW_pin);
@@ -136,7 +137,6 @@ int CAN_send(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t* data, uint8_t data
   txmsg.id = forgeid(prio, dst, cmd, type);
   txmsg.len = data_size;
   for (uint8_t i = 0; i < txmsg.len; i++) { txmsg.buf[i] = data[i]; }
-  CANbus.write(txmsg);
 }
 
 int CAN_send(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t data, uint8_t type=0){
@@ -144,7 +144,6 @@ int CAN_send(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t data, uint8_t type=
   //txmsg.len = sizeof(data);
   txmsg.len = 1;
   txmsg.buf[0] = data;
-  CANbus.write(txmsg);
 }
 
 
@@ -206,20 +205,14 @@ for (uint8_t i = 0; action_map[i].tag != 0 ; i++) {
       }
       bool new_state = digitalRead(outputs[action_map[i].outputs_idx].address);
       if ( old_state == new_state) {
-        switch ( new_state ) {
-          case 0:
-            CAN_send(NOTIFY, 0xFF, OFF, action_map[i].outputs_idx);
-          case 1:
-            CAN_send(NOTIFY, 0xFF, ON, action_map[i].outputs_idx);
-        }
+        data[0]=outputs[action_map[i].outputs_idx].address;
+        data[1]=new_state ^ outputs[action_map[i].outputs_idx].invert;
+        CAN_send(NOTIFY, 0x0, STATE_OUT, data, 2);
       }
       else {
-        switch ( new_state ) {
-          case 0:
-            CAN_send(NOTIFY, 0xFF, T_OFF, action_map[i].outputs_idx);
-          case 1:
-            CAN_send(NOTIFY, 0xFF, T_ON, action_map[i].outputs_idx);
-        }
+        data[0]=outputs[action_map[i].outputs_idx].address;
+        data[1]=new_state ^ outputs[action_map[i].outputs_idx].invert;
+        CAN_send(NOTIFY, 0x0, NEWSTATE_OUT, data, 2);
       }
     }
   }
@@ -298,7 +291,7 @@ void loop(void)
           Serial.print("Found a device: ");
           print_OW_Device(addr);
           Serial.println();
-          CAN_send(NOTIFY, 0xFF, NEW_TWID, addr, sizeof(addr));
+          CAN_send(NOTIFY, 0x0, NEW_TWID, addr, sizeof(addr));
         }
 
       }
@@ -334,9 +327,17 @@ void loop(void)
         Serial.print(switches[s_idx].nick);
         if (readout & 0x08) {
           Serial.println(F(" is now OFF"));
+          data[0]=switches[s_idx].nick;
+          data[1]=0;
+          CAN_send(NOTIFY, 0x0, STATE_IN, data, 2);
+          CANbus.write(txmsg);
           send_event(switches[s_idx].event_tag[0]);
         } else {
           Serial.println(F(" is now ON"));
+          data[0]=switches[s_idx].nick;
+          data[1]=1;
+          CAN_send(NOTIFY, 0x0, STATE_IN, data, 2);
+          CANbus.write(txmsg);
           send_event(switches[s_idx].event_tag[1]);
         }
         action[0] = 0;
@@ -346,9 +347,17 @@ void loop(void)
         Serial.print(switches[s_idx].nick);
         if (readout & 0x04) {
           Serial.println(F(" is now OFF"));
+          data[0]=switches[s_idx].nick;
+          data[1]=2;
+          CAN_send(NOTIFY, 0x0, STATE_IN, data, 2);
+          CANbus.write(txmsg);
           send_event(switches[s_idx].event_tag[2]);
         } else {
           Serial.println(F(" is now ON"));
+          data[0]=switches[s_idx].nick;
+          data[1]=3;
+          CAN_send(NOTIFY, 0x0, STATE_IN, data, 2);
+          CANbus.write(txmsg);
           send_event(switches[s_idx].event_tag[3]);
         }
         action[1] = 0;
