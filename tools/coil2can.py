@@ -12,30 +12,35 @@ from can import Bus, BusState, Logger
 
 import paho.mqtt.client as mqtt
 
-sub_topic = "roll"
-aliases = { 
-  'Esszimmer': 'EZ',
-  'Wohnzimmer1': 'WZ1',
-  'Wohnzimmer2': 'WZ2',
-  'Wohnzimmer3': 'WZ3',
-  'Wohnzimmer4': 'WZ4',
-}
-event_map = {
-  'off': 0,
-  'up': 1,
-  'down': 2
-}
-  
+sub_topic = "coil"
 coil_map = { 
-  'EZ':  [ 0x03, 0x04 , 0x03, 0x05 ],
-  'WZ1': [ 0x00, 0x01 , 0x00, 0x01 ],
-  'WZ2': [ 0x00, 0x01 , 0x00, 0x01 ],
-  'WZ3': [ 0x00, 0x01 , 0x00, 0x01 ],
-  'WZ4': [ 0x00, 0x01 , 0x00, 0x01 ]
+  'EZ': [ 0x03, 0x01 ],
+  'K': [ 0x03, 0x02 ],
+  'WZ1': [ 0x02, 0x01 ],
+  'WZ2': [ 0x02, 0x02 ],
+  'TER': [ 0x03, 0x03 ],
+  'FE': [ 0x03, 0x07 ],
+  'TRE': [ 0x02, 0x03 ],
+  'FO': [ 0x01, 0x03 ],
+  'TRO': [ 0x01, 0x07 ],
+  'KI1': [ 0x01, 0x06 ],
+  'KI2': [ 0x01, 0x04 ],
+  'SCH': [ 0x01, 0x08 ],
+  'B1': [ 0x01, 0x01 ],
+  'B2': [ 0x01, 0x02 ],
+  'ROL_EZ_DOWN': [0x03, 0x05, -1],
+  'ROL_EZ_UP': [0x03,0x04, -1],
+  'EG1': [ 0x02, 0x09 ],
+  'EG2': [ 0x03, 0x09 ],
+  'OG': [ 0x01, 0x09 ],
+  'ALL': [ 0xFF, 0x09 ],
 }
+
 cmd_map = {
   'off': 0,
+  '0': 0,
   'on': 1,
+  '1': 1,
   'value': 2,
   'toggle': 3
 }
@@ -47,7 +52,7 @@ def decon(msg_id):
    msg_dst=(msg_id>>16) & 0xFF
    msg_src=(msg_id>>8) & 0xFF
    msg_cmd=msg_id & 0xFF
-   print("msg_id: ", hex(msg_id), "prio: ", hex(msg_prio),"type: ", hex(msg_type)," dst: ", hex(msg_dst)," src: ", hex(msg_src)," cmd: ",hex(msg_cmd))
+#   print("msg_id: ", hex(msg_id), "prio: ", hex(msg_prio),"type: ", hex(msg_type)," dst: ", hex(msg_dst)," src: ", hex(msg_src)," cmd: ",hex(msg_cmd))
    return [msg_prio, msg_type, msg_dst, msg_src, msg_cmd]
 
 def con(msg_dst,msg_cmd,msg_prio=3,msg_type=0,msg_src=11, ):
@@ -72,46 +77,43 @@ def on_message(mcp_mqtt, userdata, msg):
     print("data Received topic: ", msg.topic)
     m_decode=str(msg.payload.decode("utf-8","ignore"))
     print("data Received",m_decode)
-    data=m_decode
+    msg_cmd=cmd_map[m_decode]
     sub=msg.topic[len(sub_topic)+1:]
-    event=event_map[data]
-    if event is not None: # it's 0,1,2
-      coils={
-        'up': [ coil_map[sub][0], coil_map[sub][1] ],
-        'down': [ coil_map[sub][2], coil_map[sub][3] ]
-      }
-      for key, value in coils.items():
-        msg_id=con(msg_dst=value[0],msg_cmd=0)
-        msg_data=[value[1]]
-        print("turning off: ",sub,value[0],value[1])
-        m = can.Message(arbitration_id=msg_id,
-            data=msg_data,
-            extended_id=True)
-        print("going to sent to CAN",m)
-        try:
-          local_bus.send(m)
-        except BaseException as e:
-          logging.error("Error sending can message {%s}: %s" % (m, e))
-        print("data sent to CAN",m)
-      if event is not 0:
-        print("turning on", coil)
-        addr = coils[event-1]
-        msg_id=con(msg_dst=addr[0],msg_cmd=1)
-        msg_data=[addr[1]]
-        print(msg_data)
-        m = can.Message(arbitration_id=msg_id,
-            data=msg_data,
-            extended_id=True)
-        print("going to sent to CAN",m)
+    coil=sub
+    print("substring: "+coil) 
+    addr = coil_map[coil]
+    if msg_cmd == 2:
+      msg_data.append(value)
+    print("msg_cmd",msg_cmd, len(addr))
+    if msg_cmd is not 0 and len(addr) is 3:
+      print("hello 001")
+      for key, value in coil_map.items():
+        print("checking: ", key)
+        if len(value) is 3:    
+          if value[2] is addr[2]:
+            msg_id=con(msg_dst=value[0],msg_cmd=0)
+            msg_data=[value[1]] 
+            m = can.Message(arbitration_id=msg_id,
+                data=msg_data,
+                extended_id=True)
+            try:
+              local_bus.send(m)
+            except BaseException as e:
+              logging.error("Error sending can message {%s}: %s" % (m, e))
+            print("data sent to CAN",m)
 
-        try:
-            local_bus.send(m)
-        except BaseException as e:
-            logging.error("Error sending can message {%s}: %s" % (m, e))
-        print("data sent to CAN",m)
-
-
-
+    msg_id=con(msg_dst=addr[0],msg_cmd=msg_cmd)
+    msg_data=[addr[1]] 
+           
+    m = can.Message(arbitration_id=msg_id,
+        data=msg_data,
+        extended_id=True)
+    try:
+        local_bus.send(m)
+    except BaseException as e:
+        logging.error("Error sending can message {%s}: %s" % (m, e))
+    print("data sent to CAN",m)
+      
 
 def main():
     verbosity = 2
@@ -135,8 +137,8 @@ def main():
     mcp_mqtt.connect("mcp", 1883, 60)
 
     try:
-        while True:
-            mcp_mqtt.loop_start()
+      while True:
+        mcp_mqtt.loop_start()
     except KeyboardInterrupt:
         pass
     finally:
