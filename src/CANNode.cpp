@@ -14,7 +14,9 @@
 
 // For Node definition:
 
-#include "Node_2_def.h"
+//#include "Node_1_def.h" // Dachstuhl
+#include "Node_2_def.h" // Werkstatt
+//#include "Node_3_def.h" // Keller
 
 // Metro ticks in ms
 #define METRO_CAN_tick 1
@@ -66,12 +68,13 @@ FlexCAN CANbus(CAN_speed);
 uint8_t addr[8];
 uint8_t data[8];
 uint8_t buffer[DS2406_BUF_LEN];
-uint8_t readout,trig_event,event_idx,tmp;
+uint8_t readout,recheck,trig_event,event_idx,tmp;
 OneWire OW_1(OW_pin);
 
 telegram_comp_t mesg_comp;
 
-static CAN_message_t txmsg,rxmsg;
+static CAN_message_t global_txmsg,rxmsg;
+CAN_message_t txmsg;
 static uint8_t hex[17] = "0123456789abcdef";
 
 int txCount,rxCount;
@@ -134,16 +137,25 @@ uint32_t forgeid(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t type=0){
 }
 
 int CAN_send(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t* data, uint8_t data_size, uint8_t type=0){
+  txmsg.ext = 1;
+  txmsg.timeout = 100;
   txmsg.id = forgeid(prio, dst, cmd, type);
   txmsg.len = data_size;
   for (uint8_t i = 0; i < txmsg.len; i++) { txmsg.buf[i] = data[i]; }
+  CANbus.write(txmsg);
+//  txmsg.buf[0]++;
+//  txmsg.len = 0;
 }
 
 int CAN_send(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t data, uint8_t type=0){
+  txmsg.ext = 1;
+  txmsg.timeout = 100;
   txmsg.id = forgeid(prio, dst, cmd, type);
-  //txmsg.len = sizeof(data);
   txmsg.len = 1;
   txmsg.buf[0] = data;
+  CANbus.write(txmsg);
+//  txmsg.buf[0]++;
+//  txmsg.len = 0;
 }
 
 
@@ -164,16 +176,18 @@ void send_event (uint8_t trig_event){
 
   for (uint8_t e_idx = 0; tx_events[e_idx].tag != 0; e_idx++)
     if ( tx_events[e_idx].tag == trig_event ) {
+      txmsg.ext = 1;
+      txmsg.timeout = 100;
       txmsg.id = event2id(tx_events[e_idx]);
       txmsg.len = 1;
-//      txmsg.timeout = 100;
       txmsg.buf[0]= tx_events[e_idx].data;
       CANbus.write(txmsg);
-        Serial.print(F("Sending to CAN ID: "));
-        Serial.print(txmsg.id);
-        Serial.print(F("DATA: "));
-        Serial.println(txmsg.buf[0]);
-      txmsg.len = 0;
+      Serial.print(F("Sending to CAN ID: "));
+      Serial.print(txmsg.id);
+      Serial.print(F("DATA: "));
+      Serial.println(txmsg.buf[0]);
+ //     txmsg.buf[0]++;
+//      txmsg.len = 0;
     }
   }
 
@@ -205,12 +219,12 @@ for (uint8_t i = 0; action_map[i].tag != 0 ; i++) {
       }
       bool new_state = digitalRead(outputs[action_map[i].outputs_idx].address);
       if ( old_state == new_state) {
-        data[0]=outputs[action_map[i].outputs_idx].address;
+        data[0]=action_map[i].outputs_idx;
         data[1]=new_state ^ outputs[action_map[i].outputs_idx].invert;
         CAN_send(NOTIFY, 0x0, STATE_OUT, data, 2);
       }
       else {
-        data[0]=outputs[action_map[i].outputs_idx].address;
+        data[0]=action_map[i].outputs_idx;
         data[1]=new_state ^ outputs[action_map[i].outputs_idx].invert;
         CAN_send(NOTIFY, 0x0, NEWSTATE_OUT, data, 2);
       }
@@ -231,8 +245,6 @@ void setup(void)
   pinMode(CAN_RS_PIN,OUTPUT);
   digitalWrite(CAN_RS_PIN,0);
   CANbus.begin();
-  txmsg.ext = 1;
-  txmsg.timeout = 100;
 
   // outputs
   for (size_t i = 0; outputs[i].type != NOP; i++) {
@@ -317,10 +329,14 @@ void loop(void)
       }
 //      if ((switches_state[s_idx] != readout) && (readout != 255 )) {
       if (switches_state[s_idx] != readout) {
-        tmp = readout ^ switches_state[s_idx];
-        switches_state[s_idx] = readout;
-        action[0] = tmp & 0x08;
-        action[1] = tmp & 0x04;
+        delay(1);
+        recheck = read_DS2406(switches[s_idx].addr);
+        if (readout == recheck) {
+          tmp = readout ^ switches_state[s_idx];
+          switches_state[s_idx] = readout;
+          action[0] = tmp & 0x08;
+          action[1] = tmp & 0x04;
+        }
       }
       if (action[0]) {
         Serial.print("pioA of switch ");
@@ -330,14 +346,12 @@ void loop(void)
           data[0]=switches[s_idx].nick;
           data[1]=0;
           CAN_send(NOTIFY, 0x0, STATE_IN, data, 2);
-          CANbus.write(txmsg);
           send_event(switches[s_idx].event_tag[0]);
         } else {
           Serial.println(F(" is now ON"));
           data[0]=switches[s_idx].nick;
           data[1]=1;
           CAN_send(NOTIFY, 0x0, STATE_IN, data, 2);
-          CANbus.write(txmsg);
           send_event(switches[s_idx].event_tag[1]);
         }
         action[0] = 0;
@@ -350,14 +364,12 @@ void loop(void)
           data[0]=switches[s_idx].nick;
           data[1]=2;
           CAN_send(NOTIFY, 0x0, STATE_IN, data, 2);
-          CANbus.write(txmsg);
           send_event(switches[s_idx].event_tag[2]);
         } else {
           Serial.println(F(" is now ON"));
           data[0]=switches[s_idx].nick;
           data[1]=3;
           CAN_send(NOTIFY, 0x0, STATE_IN, data, 2);
-          CANbus.write(txmsg);
           send_event(switches[s_idx].event_tag[3]);
         }
         action[1] = 0;
@@ -406,18 +418,18 @@ void loop(void)
       }
       rxCount = 0;
     }
-    txTimer = 100;//milliseconds
-    if (txmsg.len != 0){
-      Serial.print("PUT=");
-      Serial.print(txmsg.id,HEX);
-        for (uint8_t i=0; i<txmsg.len; i++){
-          Serial.print(":");
-          Serial.print(txmsg.buf[i],HEX);
-        }
-        Serial.print("\n");
-      CANbus.write(txmsg);
-      txmsg.buf[0]++;
-      txmsg.len = 0;
-    }
+//    txTimer = 10;//milliseconds
+//    if (txmsg.len != 0){
+//      Serial.print("PUT=");
+//      Serial.print(txmsg.id,HEX);
+//        for (uint8_t i=0; i<txmsg.len; i++){
+//          Serial.print(":");
+//          Serial.print(txmsg.buf[i],HEX);
+//        }
+//        Serial.print("\n");
+//      CANbus.write(txmsg);
+//      txmsg.buf[0]++;
+//      txmsg.len = 0;
+//    }
 
 }

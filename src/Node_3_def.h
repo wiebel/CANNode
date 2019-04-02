@@ -19,8 +19,8 @@
 #define RELAY4 22
 #define RELAY5 17
 #define RELAY6 16
-#define RELAY7 9
-#define RELAY8 10
+#define RELAY7 19
+#define RELAY8 18
 
 // OneWire
 #define OW_pin 14
@@ -47,8 +47,8 @@ static outputs_t outputs[N_OUTPUTS] PROGMEM={
   { GPIO, 22, 0, true },  	// 3
   { GPIO, 17, 0, true },  	// 4
   { GPIO, 16, 0, true },  	// 5
-  { GPIO, 9,  255, true },   	// 6
-  { GPIO, 10, 0, true },  	// 7
+  { GPIO, 19, 0, true },   	// 6
+  { GPIO, 18, 0, true },  	// 7
   { NOP, 0xFF, 0, 0 }
 };
 static uint8_t outputs_state[N_OUTPUTS];
@@ -69,10 +69,10 @@ static event_t tx_events[N_EVENTS] PROGMEM={
 { 8, 0x03, 0x03, TOGGLE, 0x08},
 { 11, 0x03, 0x01, ON, 0x01},
 { 12, 0x03, 0x01, ON, 0x02},
-{ 210, 0x03, 0xff, OFF, 0x04},
-{ 211, 0x03, 0xff, ON, 0x04},
-{ 220, 0x03, 0xff, OFF, 0x05},
-{ 221, 0x03, 0xff, ON, 0x05},
+{ 210, 0x03, 0x03, OFF, 0x04},
+{ 211, 0x03, 0x03, ON, 0x04},
+{ 220, 0x03, 0x03, OFF, 0x05},
+{ 221, 0x03, 0x03, ON, 0x05},
 { 255, 0x03, 0xff, OFF, 0x09},
 { 254, 0x03, 0xff, ON, 0x09},
 { 10, 0x03, 0xff, TOGGLE, 0x01},
