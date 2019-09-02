@@ -1,4 +1,4 @@
-#include <Arduino.h>
+// #include <Arduino.h>
 
 // -------------------------------------------------------------
 // CANNode for Teensy 3.1/3.2
@@ -14,8 +14,8 @@
 
 // For Node definition:
 
-//#include "Node_1_def.h" // Dachstuhl
-#include "Node_2_def.h" // Werkstatt
+#include "Node_1_def.h" // Dachstuhl
+//#include "Node_2_def.h" // Werkstatt
 //#include "Node_3_def.h" // Keller
 
 // Metro ticks in ms
@@ -142,7 +142,7 @@ int CAN_send(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t* data, uint8_t data
   txmsg.id = forgeid(prio, dst, cmd, type);
   txmsg.len = data_size;
   for (uint8_t i = 0; i < txmsg.len; i++) { txmsg.buf[i] = data[i]; }
-  CANbus.write(txmsg);
+  return CANbus.write(txmsg);
 //  txmsg.buf[0]++;
 //  txmsg.len = 0;
 }
@@ -153,7 +153,7 @@ int CAN_send(uint8_t prio, uint8_t dst, uint8_t cmd, uint8_t data, uint8_t type=
   txmsg.id = forgeid(prio, dst, cmd, type);
   txmsg.len = 1;
   txmsg.buf[0] = data;
-  CANbus.write(txmsg);
+  return CANbus.write(txmsg);
 //  txmsg.buf[0]++;
 //  txmsg.len = 0;
 }
