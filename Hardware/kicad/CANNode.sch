@@ -1,6 +1,6 @@
 EESchema Schematic File Version 4
 LIBS:CANNode-cache
-EELAYER 26 0
+EELAYER 30 0
 EELAYER END
 $Descr User 9843 7874
 encoding utf-8
@@ -15,7 +15,7 @@ Comment3 "CAN, 2*OneWire, 8*GPIO, RS485, 4*Diff. Out"
 Comment4 "Teensy 3.2 Board for Home Automation"
 $EndDescr
 $Comp
-L teensy:Teensy3.2 U1
+L CANNode-rescue:Teensy3.2-teensy U1
 U 1 1 5BE599D2
 P 7050 2600
 F 0 "U1" H 6350 3450 60  0000 C CNN
@@ -59,7 +59,7 @@ F 3 "https://datasheets.maximintegrated.com/en/ds/MAX3483-MAX3491.pdf" H 2650 16
 	-1   0    0    -1  
 $EndComp
 $Comp
-L 000_my_lib:DSN-MINI-360 MOD1
+L CANNode-rescue:DSN-MINI-360-000_my_lib MOD1
 U 1 1 5BE5A42C
 P 2450 5450
 F 0 "MOD1" H 2450 5450 45  0001 C CNN
@@ -789,7 +789,7 @@ Wire Wire Line
 Wire Wire Line
 	5700 3300 5700 3850
 $Comp
-L 000_my_lib:MAX3032 U41
+L CANNode-rescue:MAX3032-000_my_lib U41
 U 1 1 5C608233
 P 2600 3350
 F 0 "U41" H 2950 2600 50  0000 C CNN
