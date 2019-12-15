@@ -70,28 +70,24 @@ def on_connect(mcp_mqtt, userdata, flags, rc):
 
 
 def main():
-    verbosity = 2
-
-    logging_level_name = ['critical', 'error', 'warning', 'info', 'debug', 'subdebug'][min(5, verbosity)]
-    can.set_logging_level(logging_level_name)
-
     can_filters = []
     config = {"can_filters": can_filters, "single_handle": True}
-    config["interface"] = "socketcan"
+    config["interface"] = "socketcan_native"
     config["bitrate"] = 125000
-    bus = Bus("can1", **config)
-
-    print('Connected to {}: {}'.format(bus.__class__.__name__, bus.channel_info))
+    canbus = can.Bus("can1", **config)
+   # canBuffer= canbus.BufferedReader()
+    print('Connected to {}: {}'.format(canbus.__class__.__name__, canbus.channel_info))
     print('Can Logger (Started on {})\n'.format(datetime.now()))
 
     mcp_mqtt = mqtt.Client()
     mcp_mqtt.on_connect = on_connect
-    mcp_mqtt.user_data_set(bus)
+    mcp_mqtt.user_data_set(canbus)
     mcp_mqtt.connect("mcp", 1883, 60)
 
     try:
       while True:
-        msg = bus.recv(1)
+        msg = canbus.recv(1)
+#        msg = canBuffer.get_message()
         if msg is not None:
           de=decon(msg.arbitration_id)
           m= { "prio": hex(de[0]), "type": hex(de[1]), "dst": hex(de[2]), "src": hex(de[3]), "cmd": hex(de[4]), "action": hex(msg.data[0]) }
@@ -104,7 +100,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
-        bus.shutdown()
+        canbus.shutdown()
 
 if __name__ == "__main__":
     main()

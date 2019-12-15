@@ -28,8 +28,10 @@ coil_map = {
   'SCH': [ 0x01, 0x08 ],
   'B1': [ 0x01, 0x01 ],
   'B2': [ 0x01, 0x02 ],
-  'ROL_EZ_DOWN': [0x03, 0x05, -1],
-  'ROL_EZ_UP': [0x03,0x04, -1],
+  'ROL_EZ_G_DOWN': [0x03, 0x05, -1],
+  'ROL_EZ_G_UP': [0x03,0x04, -1],
+  'ROL_EZ_N_DOWN': [0x03, 0x06, -2],
+  'ROL_EZ_N_UP': [0x03,0x08, -2],
   'EG1': [ 0x02, 0x09 ],
   'EG2': [ 0x03, 0x09 ],
   'OG': [ 0x01, 0x09 ],
@@ -82,6 +84,7 @@ def on_message(mcp_mqtt, userdata, msg):
     coil=sub
     print("substring: "+coil) 
     addr = coil_map[coil]
+    print("Addr:", addr)
     if msg_cmd == 2:
       msg_data.append(value)
     print("msg_cmd",msg_cmd, len(addr))
@@ -89,7 +92,8 @@ def on_message(mcp_mqtt, userdata, msg):
       print("hello 001")
       for key, value in coil_map.items():
         print("checking: ", key)
-        if len(value) is 3:    
+        if len(value) is 3: 
+          print("value_2 is", value[2], "Addr: ", addr[2])   
           if value[2] is addr[2]:
             msg_id=con(msg_dst=value[0],msg_cmd=0)
             msg_data=[value[1]] 
@@ -135,10 +139,10 @@ def main():
     mcp_mqtt.on_message = on_message
     mcp_mqtt.user_data_set(bus)
     mcp_mqtt.connect("mcp", 1883, 60)
-
+#    mcp_mqtt.loop_start()
     try:
       while True:
-        mcp_mqtt.loop_start()
+        mcp_mqtt.loop()
     except KeyboardInterrupt:
         pass
     finally:

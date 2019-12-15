@@ -12,22 +12,25 @@ from can import Bus, BusState, Logger
 
 import paho.mqtt.client as mqtt
 
-sub_topic = "roll"
+sub_topic = "shutter"
 aliases = { 
-  'Esszimmer': 'EZ',
+  'Esszimmer_Garten': 'EZ_G',
+  'Esszimmer_Nachbar': 'EZ_N',
   'Wohnzimmer1': 'WZ1',
   'Wohnzimmer2': 'WZ2',
   'Wohnzimmer3': 'WZ3',
   'Wohnzimmer4': 'WZ4',
 }
 event_map = {
+  'stop': 0,
   'off': 0,
   'up': 1,
   'down': 2
 }
-  
-coil_map = { 
-  'EZ':  [ 0x03, 0x04 , 0x03, 0x05 ],
+coil_map = {
+  # up , down
+  'EZ_G':  [ 0x03, 0x04 , 0x03, 0x05 ],
+  'EZ_N':  [ 0x03, 0x06 , 0x03, 0x08 ],
   'WZ1': [ 0x00, 0x01 , 0x00, 0x01 ],
   'WZ2': [ 0x00, 0x01 , 0x00, 0x01 ],
   'WZ3': [ 0x00, 0x01 , 0x00, 0x01 ],
@@ -75,11 +78,11 @@ def on_message(mcp_mqtt, userdata, msg):
     data=m_decode
     sub=msg.topic[len(sub_topic)+1:]
     event=event_map[data]
+    coils={
+      'up': [ coil_map[sub][0], coil_map[sub][1] ],
+      'down': [ coil_map[sub][2], coil_map[sub][3] ]
+    }
     if event is not None: # it's 0,1,2
-      coils={
-        'up': [ coil_map[sub][0], coil_map[sub][1] ],
-        'down': [ coil_map[sub][2], coil_map[sub][3] ]
-      }
       for key, value in coils.items():
         msg_id=con(msg_dst=value[0],msg_cmd=0)
         msg_data=[value[1]]
@@ -94,8 +97,8 @@ def on_message(mcp_mqtt, userdata, msg):
           logging.error("Error sending can message {%s}: %s" % (m, e))
         print("data sent to CAN",m)
       if event is not 0:
-        print("turning on", coil)
-        addr = coils[event-1]
+        addr = coils[data]
+        print("turning on: ",addr[0],addr[1])
         msg_id=con(msg_dst=addr[0],msg_cmd=1)
         msg_data=[addr[1]]
         print(msg_data)
@@ -103,7 +106,7 @@ def on_message(mcp_mqtt, userdata, msg):
             data=msg_data,
             extended_id=True)
         print("going to sent to CAN",m)
-
+  
         try:
             local_bus.send(m)
         except BaseException as e:

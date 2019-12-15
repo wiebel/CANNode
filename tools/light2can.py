@@ -123,7 +123,7 @@ def on_message(mcp_mqtt, userdata, msg):
     if light == 'ALL':
       print("ALL detected")
       for key in light_map:
-        mcp_mqtt.publish("light/"+key+"/state", msg_cmd, retain=1)	
+        mcp_mqtt.publish("light/"+key+"/state", msg_cmd, retain=1)
       
 
 def main():
@@ -134,7 +134,7 @@ def main():
 
     can_filters = []
     config = {"can_filters": can_filters, "single_handle": True}
-    config["interface"] = "socketcan"
+    config["interface"] = "socketcan_native"
     config["bitrate"] = 125000
     bus = Bus("can1", **config)
 
@@ -146,10 +146,10 @@ def main():
     mcp_mqtt.on_message = on_message
     mcp_mqtt.user_data_set(bus)
     mcp_mqtt.connect("mcp", 1883, 60)
+    mcp_mqtt.loop_start()
 
     try:
       while True:
-        mcp_mqtt.loop_start()
         msg = bus.recv(1)
         if msg is not None:
           de=decon(msg.arbitration_id)
