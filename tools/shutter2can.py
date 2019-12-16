@@ -138,8 +138,8 @@ def main():
     mcp_mqtt.connect("mcp", 1883, 60)
 
     try:
-        while True:
-            mcp_mqtt.loop_start()
+      while True:
+        mcp_mqtt.loop()
     except KeyboardInterrupt:
         pass
     finally:
