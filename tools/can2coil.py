@@ -28,10 +28,10 @@ coil_map = {
   'SCH': [ 0x01, 0x08 ],
   'B1': [ 0x01, 0x01 ],
   'B2': [ 0x01, 0x02 ],
-  'ROL_EZ_G_DOWN': [0x03, 0x05, -1],
-  'ROL_EZ_G_UP': [0x03,0x04, -1],
-  'ROL_EZ_N_DOWN': [0x03, 0x06, -2],
-  'ROL_EZ_N_UP': [0x03,0x08, -2],
+  'ROL_EZ_G_DOWN': [0x03, 0x05],
+  'ROL_EZ_G_UP': [0x03,0x04],
+  'ROL_EZ_N_DOWN': [0x03, 0x06],
+  'ROL_EZ_N_UP': [0x03,0x08],
   'EG1': [ 0x02, 0x09 ],
   'EG2': [ 0x03, 0x09 ],
   'OG': [ 0x01, 0x09 ],
@@ -86,6 +86,7 @@ def main():
     mcp_mqtt.user_data_set(canbus)
     mcp_mqtt.connect("mcp", 1883, 60)
 
+    mcp_mqtt.publish("coil/welcome", "1" , retain=0)	
     try:
       while True:
         msg = canbus.recv(1)

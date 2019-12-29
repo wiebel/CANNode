@@ -139,10 +139,21 @@ def main():
     mcp_mqtt.on_message = on_message
     mcp_mqtt.user_data_set(bus)
     mcp_mqtt.connect("mcp", 1883, 60)
-#    mcp_mqtt.loop_start()
+    mcp_mqtt.loop_start()
+
     try:
       while True:
-        mcp_mqtt.loop()
+        msg = bus.recv(1)
+        if msg is not None:
+          de=decon(msg.arbitration_id)
+          m= { "prio": hex(de[0]), "type": hex(de[1]), "dst": hex(de[2]), "src": hex(de[3]), "cmd": hex(de[4]), "action": hex(msg.data[0]) }
+          if de[2]==0 and de[4] == 6:
+            print("received state: ", hex(de[3]), hex(msg.data[0]), hex(msg.data[1]))   
+            for key in coil_map:
+              address=coil_map[key]
+              if address[0] == de[3] and address[1] == msg.data[0]+1:
+                 print("coil/"+key+" changed to "+str(msg.data[1]))
+                 mcp_mqtt.publish("coil/"+key+"/state", msg.data[1] , retain=1)	
     except KeyboardInterrupt:
         pass
     finally:
