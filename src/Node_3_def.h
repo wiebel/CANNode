@@ -13,14 +13,14 @@
 #define DEBUG 0										// 1 for noisy serial
 #define LED 13
 
-#define RELAY1 0
-#define RELAY2 1
-#define RELAY3 23
-#define RELAY4 22
-#define RELAY5 17
-#define RELAY6 16
-#define RELAY7 19
-#define RELAY8 18
+#define RELAY1 0  // EZ 
+#define RELAY2 1  // Küche
+#define RELAY3 23 // Terrasse
+#define RELAY4 22 // RO_Garten
+#define RELAY5 17 // RO_Garten
+#define RELAY6 16 // 
+#define RELAY7 19 // EG Flur
+#define RELAY8 18 //
 
 // OneWire
 #define OW_pin 14
@@ -32,23 +32,24 @@ static OW_switch_t switches[N_SWITCHES] PROGMEM={
  { 11, { 0x12, 0xF2, 0x2A, 0x66, 0x0, 0x0, 0x0, 0x41 }, { 1, 1, 0, 0 } }, // EZ -> Flur
  { 12, { 0x12, 0x37, 0x8A, 0x4F, 0x0, 0x0, 0x0, 0xE5 }, { 2, 2, 2, 2 } }, // im keller TEST
  { 13, { 0x12, 0x71, 0x51, 0x57, 0x0, 0x0, 0x0, 0x28 }, { 2, 2, 0, 0 } }, // Küche  Kühlschank
+ { 14, { 0x12, 0x5e, 0xff, 0x55, 0x0, 0x0, 0x0, 0x2c }, { 2, 2, 3, 3 } }, // Küche Terasse
  //{ 21, { 0x12, 0x86, 0xB4, 0x54, 0x0, 0x0, 0x0, 0x5F }, { 3, 3, 4, 4 } },
  { 22, { 0x12, 0x84, 0xAD, 0x4F, 0x0, 0x0, 0x0, 0x12 }, { 1, 1, 2, 2 } }, // EZ -> Küche
-// { 31, { 0x12, 0x88, 0xDD, 0x53, 0x0, 0x0, 0x0, 0x28 }, { 210, 211, 220, 221 } }, // Roldenschalter (A - UP, B - DOWN)
- { 31, { 0x12, 0x8F, 0xE2, 0x86 ,0x0, 0x0, 0x0, 0xC6}, { 220, 221, 210, 211 } } // Roldenschalter (A - UP, B - DOWN)
-
+// { 31, { 0x12, 0x88, 0xDD, 0x53, 0x0, 0x0, 0x0, 0x28 }, { 210, 211, 220, 221 } }, // Rolladenschalter (A - UP, B - DOWN)
+ { 31, { 0x12, 0x8F, 0xE2, 0x86 ,0x0, 0x0, 0x0, 0xC6}, { 220, 221, 210, 211 } }, // Rolladenschalter (A - UP, B - DOWN)
+ { 0, { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 }, { 0, 0, 0, 0 } } // END MARK
 };
 static uint8_t switches_state[N_SWITCHES];
 static outputs_t outputs[N_OUTPUTS] PROGMEM={
 // type, address(PIN), initial value, inverted
-  { GPIO, 0,  0, true },   	// 0
-  { GPIO, 1,  0, true },   	// 1
-  { GPIO, 23, 0, true },  	// 2
-  { GPIO, 22, 0, true },  	// 3
-  { GPIO, 17, 0, true },  	// 4
-  { GPIO, 16, 0, true },  	// 5
-  { GPIO, 19, 0, true },   	// 6
-  { GPIO, 18, 0, true },  	// 7
+  { GPIO, RELAY1, 0, true },
+  { GPIO, RELAY2, 0, true },
+  { GPIO, RELAY3, 0, true },
+  { GPIO, RELAY4, 0, true },
+  { GPIO, RELAY5, 0, true },
+  { GPIO, RELAY6, 0, true },
+  { GPIO, RELAY7, 0, true },
+  { GPIO, RELAY8, 0, true },
   { NOP, 0xFF, 0, 0 }
 };
 static uint8_t outputs_state[N_OUTPUTS];
@@ -92,13 +93,13 @@ static event_t tx_events[N_EVENTS] PROGMEM={
 
 static action_t action_map[N_ACTIONS] PROGMEM={
 //  tag, output_idx
-  {1, 0},
-  {2, 1},
-  {3, 2},
-  {4, 3},
-  {5, 4},
+  {1, 0}, // EZ
+  {2, 1}, // Küche
+  {3, 2}, // Terrasse
+  {4, 3}, // RO_Garten 
+  {5, 4}, // RO_Garten
   {6, 5},
-  {7, 6},
+  {7, 6}, // EG_Flur
   {8, 7},
   {9, 0},{9, 1},{9, 2},{9, 3},{9, 4},{9, 5},{9, 6},{9, 7},
   {210, 210},

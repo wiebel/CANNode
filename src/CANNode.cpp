@@ -14,9 +14,9 @@
 
 // For Node definition:
 
-#include "Node_1_def.h" // Dachstuhl
+//#include "Node_1_def.h" // Dachstuhl
 //#include "Node_2_def.h" // Werkstatt
-//#include "Node_3_def.h" // Keller
+#include "Node_3_def.h" // Keller
 
 // Metro ticks in ms
 #define METRO_CAN_tick 1
@@ -305,7 +305,6 @@ void loop(void)
           Serial.println();
           CAN_send(NOTIFY, 0x0, NEW_TWID, addr, sizeof(addr));
         }
-
       }
   }
   if (METRO_OW_read.check() ) {
