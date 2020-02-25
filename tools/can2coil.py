@@ -12,33 +12,8 @@ from can import Bus, BusState, Logger
 
 import paho.mqtt.client as mqtt
 
-sub_topic = "light"
-aliases = { 
-  'Esszimmer': 'EZ',
-  'Esszimmer oben': 'EZ',
-  'Küche': 'K',
-  'Wohnzimmer1': 'WZ1',
-  'Wohnzimmer2': 'WZ2',
-  'Wohnzimmer Nord': 'WZ1',
-  'Wohnzimmer Süd': 'WZ2',
-  'Wohnzimmer Tür': 'WZ1',
-  'Wohnzimmer TV': 'WZ2',
-  'Wohnzimmer Fernseher': 'WZ2',
-  'Bad Decke': 'B1',
-  'Bad Spiegel': 'B2',
-  'Bjarne': 'K1',
-  'Inka': 'K2',
-  'Schlafzimmer': 'SCH',
-  'Flur EG': 'FE',
-  'Flur unten': 'FE',
-  'Flur OG': 'FO',
-  'Flur oben': 'FO',
-  'Treppe EG': 'TRE',
-  'Treppe unten': 'TRE',
-  'Treppe OG': 'TRO',
-  'Treppe oben': 'TRO'
-}
-light_map = { 
+sub_topic = "coil"
+coil_map = { 
   'EZ': [ 0x03, 0x01 ],
   'K': [ 0x03, 0x02 ],
   'WZ1': [ 0x02, 0x01 ],
@@ -53,11 +28,16 @@ light_map = {
   'SCH': [ 0x01, 0x08 ],
   'B1': [ 0x01, 0x01 ],
   'B2': [ 0x01, 0x02 ],
+  'ROL_EZ_G_DOWN': [0x03, 0x05],
+  'ROL_EZ_G_UP': [0x03,0x04],
+  'ROL_EZ_N_DOWN': [0x03, 0x06],
+  'ROL_EZ_N_UP': [0x03,0x08],
   'EG1': [ 0x02, 0x09 ],
   'EG2': [ 0x03, 0x09 ],
   'OG': [ 0x01, 0x09 ],
   'ALL': [ 0xFF, 0x09 ],
 }
+
 cmd_map = {
   'off': 0,
   '0': 0,
@@ -88,83 +68,42 @@ def con(msg_dst,msg_cmd,msg_prio=3,msg_type=0,msg_src=11, ):
 
 def on_connect(mcp_mqtt, userdata, flags, rc):
     print("Connected with result code "+str(rc))
-
-    # Subscribing in on_connect() means that if we lose the connection and
-    # reconnect then subscriptions will be renewed.
     mcp_mqtt.subscribe(sub_topic+"/+")
-    print("Subscribed to:"+sub_topic+"/+")
 
-def on_message(mcp_mqtt, userdata, msg):
-    local_bus=userdata
-    print("data Received topic: ", msg.topic)
-    m_decode=str(msg.payload.decode("utf-8","ignore"))
-    print("data Received",m_decode)
-    msg_cmd=cmd_map[m_decode]
-    sub=msg.topic[len(sub_topic)+1:]
-    light=aliases.get(sub,None)
-    if light is None:
-      light=sub
-    print("substring: "+light) 
-    addr = light_map[light]
-    msg_id=con(msg_dst=addr[0],msg_cmd=msg_cmd)
-    msg_data=[addr[1]] 
-    print(msg_data)
-    if msg_cmd == 2:
-      msg_data.append(value)
-    print(msg_data)
-    m = can.Message(arbitration_id=msg_id,
-        data=msg_data,
-        extended_id=True)
-    try:
-        local_bus.send(m)
-    except BaseException as e:
-        logging.error("Error sending can message {%s}: %s" % (m, e))
-    print("data sent to CAN",m)
-    if light == 'ALL':
-      print("ALL detected")
-      for key in light_map:
-        mcp_mqtt.publish("light/"+key+"/state", msg_cmd, retain=1)
-      
 
 def main():
-    verbosity = 2
-
-    logging_level_name = ['critical', 'error', 'warning', 'info', 'debug', 'subdebug'][min(5, verbosity)]
-    can.set_logging_level(logging_level_name)
-
     can_filters = []
     config = {"can_filters": can_filters, "single_handle": True}
     config["interface"] = "socketcan_native"
     config["bitrate"] = 125000
-    bus = Bus("can1", **config)
-
-    print('Connected to {}: {}'.format(bus.__class__.__name__, bus.channel_info))
+    canbus = can.Bus("can1", **config)
+   # canBuffer= canbus.BufferedReader()
+    print('Connected to {}: {}'.format(canbus.__class__.__name__, canbus.channel_info))
     print('Can Logger (Started on {})\n'.format(datetime.now()))
 
     mcp_mqtt = mqtt.Client()
     mcp_mqtt.on_connect = on_connect
-    mcp_mqtt.on_message = on_message
-    mcp_mqtt.user_data_set(bus)
+    mcp_mqtt.user_data_set(canbus)
     mcp_mqtt.connect("mcp", 1883, 60)
-    mcp_mqtt.loop_start()
 
+    mcp_mqtt.publish("coil/welcome", "1" , retain=0)	
     try:
       while True:
-        msg = bus.recv(1)
+        msg = canbus.recv(1)
+#        msg = canBuffer.get_message()
         if msg is not None:
           de=decon(msg.arbitration_id)
           m= { "prio": hex(de[0]), "type": hex(de[1]), "dst": hex(de[2]), "src": hex(de[3]), "cmd": hex(de[4]), "action": hex(msg.data[0]) }
           if de[2]==0 and de[4] == 6:
             print("received state: ", hex(de[3]), hex(msg.data[0]), hex(msg.data[1]))   
-            for key in light_map:
-              address=light_map[key]
+            for key, address in coil_map.items():
               if address[0] == de[3] and address[1] == msg.data[0]+1:
-                 print("light/"+key+" changed to "+str(msg.data[1]))
-                 mcp_mqtt.publish("light/"+key+"/state", msg.data[1] , retain=1)	
+                 print("coil/"+key+" changed to "+str(msg.data[1]))
+                 mcp_mqtt.publish("coil/"+key+"/state", msg.data[1] , retain=1)	
     except KeyboardInterrupt:
         pass
     finally:
-        bus.shutdown()
+        canbus.shutdown()
 
 if __name__ == "__main__":
     main()
