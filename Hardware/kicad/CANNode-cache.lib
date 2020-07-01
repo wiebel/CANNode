@@ -1,18 +1,46 @@
 EESchema-LIBRARY Version 2.4
 #encoding utf-8
 #
-# CANNode-rescue_DSN-MINI-360-000_my_lib
+# 00_mylib_Logo
 #
-DEF CANNode-rescue_DSN-MINI-360-000_my_lib MOD 0 40 N Y 1 F N
-F0 "MOD" 350 -50 50 H V C CNN
-F1 "CANNode-rescue_DSN-MINI-360-000_my_lib" 200 350 50 H V C CNN
-F2 "" 250 150 50 H I C CNN
-F3 "" 250 150 50 H I C CNN
+DEF 00_mylib_Logo Log 0 0 N N 1 F N
+F0 "Log" 0 0 50 H I C CNN
+F1 "00_mylib_Logo" 0 100 50 H V C CNN
+F2 "" 0 0 50 H I C CNN
+F3 "" 0 0 50 H I C CNN
 DRAW
-S 0 300 400 0 0 0 0 f
-X GND GND 200 -100 100 U 50 50 1 1 P
-X IN IN -100 250 100 R 50 50 1 1 P
-X OUT OUT 500 250 100 L 50 50 1 1 P
+ENDDRAW
+ENDDEF
+#
+# 00_mylib_OWN_DCDC-CANNode
+#
+DEF 00_mylib_OWN_DCDC-CANNode MOD 0 40 N N 1 L N
+F0 "MOD" 0 0 45 H I C CNN
+F1 "00_mylib_OWN_DCDC-CANNode" 0 0 45 H I C CNN
+F2 "" 0 0 50 H I C CNN
+F3 "" 0 0 50 H I C CNN
+$FPLIST
+ *OWN_DC-DC*
+$ENDFPLIST
+DRAW
+T 0 -174 128 56 0 1 0 + Normal 0 C C
+T 0 226 128 56 0 1 0 + Normal 0 C C
+T 0 7 28 56 0 1 0 DCDC Normal 0 C C
+S -150 100 150 -50 1 1 0 N
+P 2 1 0 0 -300 -200 300 -200 N
+P 2 1 0 0 -300 -100 -300 -200 N
+P 2 1 0 0 -300 -100 0 -100 N
+P 2 1 0 0 -300 200 -300 -100 N
+P 2 1 0 0 -30 -150 30 -150 N
+P 2 1 0 0 0 -100 0 -150 N
+P 2 1 0 0 0 -100 300 -100 N
+P 2 1 0 0 300 -200 300 -100 N
+P 2 1 0 0 300 -100 300 200 N
+P 2 1 0 0 300 200 -300 200 N
+X IN+ IN+ -400 100 200 R 40 40 1 1 W
+X IN- IN- -400 -100 200 R 40 40 1 1 W
+X OUT+ OUT+ 400 100 200 L 40 40 1 1 w
+X OUT- OUT- 400 -100 200 L 40 40 1 1 w
 ENDDRAW
 ENDDEF
 #
@@ -58,6 +86,27 @@ X 4_RX_PWM 6 -950 200 200 R 50 50 1 1 B
 X 5_TX1_PWM 7 -950 100 200 R 50 50 1 1 B
 X 6_PWM 8 -950 0 200 R 50 50 1 1 B
 X 7_RX3_DOUT 9 -950 -100 200 R 50 50 1 1 B
+ENDDRAW
+ENDDEF
+#
+# Connector_Generic_Conn_01x03
+#
+DEF Connector_Generic_Conn_01x03 J 0 40 Y N 1 F N
+F0 "J" 0 200 50 H V C CNN
+F1 "Connector_Generic_Conn_01x03" 0 -200 50 H V C CNN
+F2 "" 0 0 50 H I C CNN
+F3 "" 0 0 50 H I C CNN
+$FPLIST
+ Connector*:*_1x??_*
+$ENDFPLIST
+DRAW
+S -50 -95 0 -105 1 1 6 N
+S -50 5 0 -5 1 1 6 N
+S -50 105 0 95 1 1 6 N
+S -50 150 50 -150 1 1 10 f
+X Pin_1 1 -200 100 150 R 50 50 1 1 P
+X Pin_2 2 -200 0 150 R 50 50 1 1 P
+X Pin_3 3 -200 -100 150 R 50 50 1 1 P
 ENDDRAW
 ENDDEF
 #
@@ -204,6 +253,9 @@ F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
  SolderJumper*Bridged*
+ Jumper*
+ TestPoint*2Pads*
+ TestPoint*Bridge*
 $ENDFPLIST
 DRAW
 A 0 -10 57 450 1350 0 1 0 N 40 30 -40 30
@@ -328,7 +380,9 @@ F1 "Jumper_Jumper_3_Bridged12" 0 110 50 H V C CNN
 F2 "" 0 0 50 H I C CNN
 F3 "" 0 0 50 H I C CNN
 $FPLIST
- SolderJumper*Bridged12*
+ Jumper*
+ TestPoint*3Pads*
+ TestPoint*Bridge*
 $ENDFPLIST
 DRAW
 A -65 -50 89 1282 518 0 1 0 N -120 20 -10 20
@@ -339,6 +393,21 @@ P 2 0 1 0 0 -50 0 -20 N
 X A 1 -250 0 100 R 50 50 1 1 P
 X C 2 0 -150 100 U 50 50 1 1 I
 X B 3 250 0 100 L 50 50 1 1 P
+ENDDRAW
+ENDDEF
+#
+# Mechanical_MountingHole
+#
+DEF Mechanical_MountingHole H 0 40 Y Y 1 F N
+F0 "H" 0 200 50 H V C CNN
+F1 "Mechanical_MountingHole" 0 125 50 H V C CNN
+F2 "" 0 0 50 H I C CNN
+F3 "" 0 0 50 H I C CNN
+$FPLIST
+ MountingHole*
+$ENDFPLIST
+DRAW
+C 0 0 50 0 1 50 N
 ENDDRAW
 ENDDEF
 #
